@@ -1,0 +1,73 @@
+# API Data Hook Patterns
+
+How `project-mobile` consumes the backend API through hooks. The `api/` layer is covered by the [API client structure](../../../code-get-coding-designs/designs/api-client-structure.md) design; these patterns cover the hooks that wrap it.
+
+## Return `{ state, actions }` from generic API hooks
+
+- The generic hooks (`useAPIRequest`, `useAPIMutation`, `useAPIPaginated`, `useAPICursorPaginated`) wrap React Query and return a two-key object: `state` holds the data and flags (`data`, `isLoading`, `isError`, `error`), `actions` holds the callbacks (`refetch`, `invalidate`, `mutate`).
+- Consumers destructure `{ state, actions }`, never the raw React Query result, so the shape stays uniform across the app.
+
+```typescript
+// Correct way
+export function useAPIRequest<T>({ url, params, enabled }: UseAPIRequestProps) {
+  const { data, isLoading, isError, error, refetch } = useQuery<T>({
+    queryKey: [url, params],
+    queryFn: async () => (await authClient.get<T>(url, { params })).data,
+    enabled: enabled ?? true,
+  })
+
+  return {
+    actions: { refetch, invalidate: () => {/* ... */} },
+    state: { data, isLoading, isError, error },
+  }
+}
+```
+
+## Name the result by what it is
+
+- Store the result as `{subject}Request` or `{action}Mutation` and read `{subject}Request.state.data`. Never abbreviate (`ws`, `me`, `conns`, `m`).
+
+```typescript
+// Wrong way
+const ws = useWorkspacesData()
+const m = useDeleteTaskData()
+
+// Correct way
+const workspacesRequest = useWorkspacesData()
+const deleteMutation = useDeleteTaskData()
+workspacesRequest.state.data
+```
+
+## One data hook per file, owning its cache effects
+
+- One file per hook under `layout/hooks/api/`, named `use-{subject}-data.ts`. No aggregate `queries.ts` and no barrel files.
+- A mutation that touches the cache owns its `invalidateQueries`/`setQueryData` (and optimistic update) through the shared query keys. Pages pass only UI callbacks (`onSuccess`, `onError`) for toasts, navigation and closing dialogs, and never call `useQueryClient` for these.
+- Page logic that is not a cache effect but is too large for `page.tsx` goes to the page's `hooks/use-{subject}.ts`.
+
+## Wrap each endpoint in a thin per-domain data hook
+
+- Each endpoint gets a `use{Domain}{Action}Data` hook under `layout/hooks/api/` that binds the generic hook to the route and the typed response envelope, and nothing else. Components import the domain hook, not the generic one.
+
+```typescript
+// Correct way
+export function useTaskDetailData(taskId: string) {
+  return useAPIRequest<ItemResponse<Task>>({
+    url: API_ROUTES.tasks.detail(taskId),
+  })
+}
+```
+
+## Gate fetching with `enabled`
+
+- For requests that must not run until an input is ready (a detail hook with no id yet), forward an `enabled` flag instead of conditionally calling the hook.
+
+```typescript
+// Wrong way — conditional hook call breaks the rules of hooks
+const data = taskId ? useTaskDetailData(taskId) : null
+
+// Correct way
+useAPIRequest<ItemResponse<Task>>({
+  url: API_ROUTES.tasks.detail(taskId),
+  enabled: Boolean(taskId),
+})
+```
