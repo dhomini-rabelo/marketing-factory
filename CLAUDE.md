@@ -12,6 +12,8 @@ Crie um commit a cada ciclo fechado, inclusive no meio da task. Ciclo fechado: u
 
 Commite somente quando não houver mais edição prevista nesses arquivos nesta task. Deixe rascunho e WIP fora do git.
 
+**Sempre commite depois de editar.** Toda edição de arquivos termina em commit: ao concluir a resposta, não deixe alterações sem commit na árvore de trabalho (`git status` limpo), inclusive em ajustes pequenos, em mudanças de configuração e no `CLAUDE.md`. Se a edição ainda for continuar na mesma task, commite quando o lote fechar; o que não pode acontecer é encerrar a task com edições pendentes.
+
 Não espere o usuário olhar o diff. Não espere Bugbot nem PR. Não pergunte se pode commitar. Esta seção já é esse pedido.
 
 # Leitura de skills
