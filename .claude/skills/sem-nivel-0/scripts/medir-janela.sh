@@ -8,7 +8,7 @@
 #   medir-janela.sh --list     # diagnóstico: lista os descriptions recentes da sessão
 #
 # Saída (uma linha):
-#   janela=118539 teto=140000 pct=84 turns=33 teto_turns=50 taxa=1084 proj=161899 proxima=73 status=handoff fonte=exato desc="E2-01-045"
+#   janela=118539 teto=140000 pct=84 turns=33 teto_turns=50 taxa=1084 proj=161899 proxima=73 min=31 teto_min=45 restam_min=14 status=handoff fonte=exato desc="E2-01-045"
 #   status=handoff quando janela >= teto OU quando a PROJEÇÃO até a próxima medição o alcança.
 #   status=preso   quando turns >= teto_turns e a `taxa` é baixa (< TAXA_MIN): muitos turns
 #                  rendendo quase nada, que é assinatura de laço, não de trabalho longo.
@@ -23,6 +23,14 @@
 #   O passo tem que caber DUAS vezes no teto de turns, senão a segunda medição
 #   já nasce do outro lado dele: com TETO_TURNS=50, um passo de 40 mediria em 40
 #   e só de novo em 80. Se você subir TETO_TURNS, suba o PASSO junto.
+# Teto de tempo: TETO_MIN=45 medir-janela.sh <nonce>   (default 0 = desligado)
+#   Minutos desde o início do agente, em `min=`; `restam_min=` é o que falta até o teto.
+#   O status vira handoff em `min >= TETO_MIN - MARGEM_MIN` (MARGEM_MIN, default 5), para
+#   sobrar tempo de escrever o handoff ou o `## Parcial`. Uma pausa maior que
+#   PAUSA_RESET_MIN (default 60) zera o relógio: o agente ficou parado (esperando a
+#   resposta do usuário, por exemplo) e o cache dele já expirou nessa pausa.
+#   Por que 45 na sem-nivel-0: o cache dos orquestradores dura 1h, e nenhuma espera por
+#   um filho deve chegar perto disso. Desligado por padrão para não mudar as outras skills.
 #
 # ---------------------------------------------------------------------------
 # Por que este script foi endurecido (medido no grupo 045)
@@ -137,8 +145,9 @@ fi
 
 TETO="${TETO:-140000}" PASSO="${PASSO:-25}" PISO="${PISO:-60}" \
 TETO_TURNS="${TETO_TURNS:-50}" TAXA_MIN="${TAXA_MIN:-400}" MARGEM_TURNS="${MARGEM_TURNS:-5}" \
+TETO_MIN="${TETO_MIN:-0}" MARGEM_MIN="${MARGEM_MIN:-5}" PAUSA_RESET_MIN="${PAUSA_RESET_MIN:-60}" \
 ALVO="$alvo" CWD="$PWD" python3 <<'PY'
-import glob, json, os, sys
+import datetime, glob, json, os, sys
 
 teto = int(os.environ["TETO"])
 passo = max(1, int(os.environ["PASSO"]))
@@ -146,6 +155,9 @@ piso = int(os.environ["PISO"])
 teto_turns = int(os.environ["TETO_TURNS"])
 taxa_min = int(os.environ["TAXA_MIN"])
 margem_turns = max(0, int(os.environ["MARGEM_TURNS"]))
+teto_min = max(0, int(os.environ["TETO_MIN"]))
+margem_min = max(0, int(os.environ["MARGEM_MIN"]))
+pausa_reset_min = max(1, int(os.environ["PAUSA_RESET_MIN"]))
 alvo = os.environ["ALVO"]
 cwd = os.environ["CWD"]
 
@@ -274,6 +286,7 @@ if not os.path.isfile(transcript):
 # ---------------------------------------------------------------- medição
 
 janelas = []
+momentos = []
 ultimo_id = None
 with open(transcript, "r", encoding="utf-8", errors="replace") as f:
     for linha in f:
@@ -285,6 +298,8 @@ with open(transcript, "r", encoding="utf-8", errors="replace") as f:
         except json.JSONDecodeError:
             # última linha pode estar sendo escrita agora (transcript ao vivo)
             continue
+        if evento.get("timestamp"):
+            momentos.append(evento["timestamp"])
         if evento.get("type") != "assistant":
             continue
         msg = evento.get("message") or {}
@@ -333,6 +348,26 @@ proxima = min(turns + passo, corte_turns) if turns < corte_turns else turns
 proj = janela + taxa * max(1, proxima - turns)
 pct = janela * 100 // teto if teto else 0
 
+# Tempo: minutos desde o início do agente. Uma pausa maior que `pausa_reset_min` zera o
+# relógio, porque o agente estava parado (resposta do usuário, retomada por SendMessage)
+# e o cache dele já expirou: contar essa pausa faria um agente retomado pedir handoff
+# no primeiro turn.
+def _instante(s):
+    try:
+        return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+
+pontos = [p for p in (_instante(s) for s in momentos) if p is not None]
+inicio = pontos[0] if pontos else None
+for antes, depois in zip(pontos, pontos[1:]):
+    if (depois - antes).total_seconds() > pausa_reset_min * 60:
+        inicio = depois
+agora = datetime.datetime.now(datetime.timezone.utc)
+minutos = int((agora - inicio).total_seconds() // 60) if inicio else 0
+restam_min = max(0, teto_min - minutos) if teto_min else 0
+
 # O valor absoluto sempre manda. A projeção só decide DEPOIS do piso — antes dele a
 # `taxa` é ruidosa demais para justificar um handoff (que custa um baseline novo).
 #
@@ -346,8 +381,11 @@ elif turns >= corte_turns:
     status = "preso" if taxa < taxa_min else "handoff"
 else:
     status = "ok"
+# O teto de tempo só decide quando janela e turns não decidiram: `preso` continua `preso`.
+if teto_min and status == "ok" and minutos >= teto_min - margem_min:
+    status = "handoff"
 print(
-    'janela=%d teto=%d pct=%d turns=%d teto_turns=%d taxa=%d proj=%d proxima=%d status=%s fonte=%s desc="%s"'
-    % (janela, teto, pct, turns, teto_turns, taxa, proj, proxima, status, fonte, desc_casada)
+    'janela=%d teto=%d pct=%d turns=%d teto_turns=%d taxa=%d proj=%d proxima=%d min=%d teto_min=%d restam_min=%d status=%s fonte=%s desc="%s"'
+    % (janela, teto, pct, turns, teto_turns, taxa, proj, proxima, minutos, teto_min, restam_min, status, fonte, desc_casada)
 )
 PY
