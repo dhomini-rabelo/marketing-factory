@@ -1,28 +1,18 @@
-import { createID } from '@domain/base'
+import { createID, Serialize, WithID } from '@domain/base'
 import {
   Competitor,
   CompetitorApproval,
+  CompetitorProps,
   CompetitorRole,
   normalizeCompetitorName,
 } from '@domain/competitor-analysis'
+import type { OverWrite } from '@modules/utils'
 import { toEnumMember } from '@infra/db/repos/_base/enum-member'
 
-export type CompetitorRecord = {
-  id: string
-  projectId: string
-  normalizedName: string
-  name: string
-  role: string
-  marketFocus: string
-  services: string
-  features: string
-  audience: string
-  rationale: string
-  url: string | null
-  incorrect: number
-  position: number
-  qualifiedAt: string
-}
+export type CompetitorRecord = OverWrite<
+  Serialize<WithID<CompetitorProps>>,
+  { role: `${CompetitorRole}`; incorrect: number }
+> & { normalizedName: string; position: number }
 
 export class CompetitorMapper {
   static toPersistence(competitor: Competitor, position: number): CompetitorRecord {

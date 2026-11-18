@@ -1,38 +1,25 @@
-import { createID } from '@domain/base'
+import { createID, Serialize, WithID } from '@domain/base'
 import {
   BestContent,
   Channel,
   ChannelAnalysis,
+  ChannelAnalysisProps,
   Finding,
   FindingAspect,
   FindingKind,
 } from '@domain/competitor-analysis'
+import type { OverWrite } from '@modules/utils'
 import { toEnumMember } from '@infra/db/repos/_base/enum-member'
 
-export type ChannelAnalysisRecord = {
-  id: string
-  projectId: string
-  channel: string
-  score: number
-  rationale: string
-  bestContentType: string
-  bestContentEvidence: string
-  bestContentBasis: string
-  collectedAt: string
-}
+export type ChannelAnalysisRecord = OverWrite<
+  Omit<Serialize<WithID<ChannelAnalysisProps>>, 'bestContent' | 'findings'>,
+  { channel: `${Channel}` }
+> & { bestContentType: string; bestContentEvidence: string; bestContentBasis: `${FindingKind}` }
 
-export type ChannelFindingRecord = {
-  projectId: string
-  channel: string
-  position: number
-  competitor: string
-  aspect: string
-  kind: string
-  statement: string
-  url: string | null
-  excerpt: string | null
-  tool: string | null
-}
+export type ChannelFindingRecord = OverWrite<
+  Serialize<Finding>,
+  { aspect: `${FindingAspect}`; kind: `${FindingKind}` }
+> & { projectId: string; channel: `${Channel}`; position: number }
 
 export class ChannelAnalysisMapper {
   static toPersistence(analysis: ChannelAnalysis): {
