@@ -86,7 +86,7 @@ function sendValidationError(response: Response, issues: FieldIssue[]) {
   })
 }
 
-function listSchemaIssues(error: ZodError): FieldIssue[] {
+export function listSchemaIssues(error: ZodError): FieldIssue[] {
   const fields = new Set(error.issues.map((issue) => formatIssuePath(issue.path)))
 
   return [...fields].map((field) => ({ field, code: FieldErrorCode.REQUIRED }))

@@ -229,6 +229,36 @@ describe('channel routes', () => {
     ])
   })
 
+  it('answers 404 CHANNEL_NOT_FOUND before validating an incomplete body', async () => {
+    const result = await saveChannel<ErrorBody>({ channel: 'inexistente', body: {} })
+
+    expect(result.status).toBe(404)
+    expect(result.body.error.code).toBe('CHANNEL_NOT_FOUND')
+    expect(result.body.error.fields).toBeUndefined()
+  })
+
+  it('answers 404 PROJECT_NOT_FOUND before validating an incomplete body', async () => {
+    const result = await saveChannel<ErrorBody>({ targetProjectId: 'nao-existe', body: {} })
+
+    expect(result.status).toBe(404)
+    expect(result.body.error.code).toBe('PROJECT_NOT_FOUND')
+  })
+
+  it('lists an invalid score together with the missing fields of an incomplete body', async () => {
+    const result = await saveChannel<ErrorBody>({ channel: 'seo', body: { score: 11 } })
+
+    expect(result.status).toBe(400)
+    expect(result.body.error.code).toBe('VALIDATION_ERROR')
+    expect(
+      result.body.error.fields?.map((field) => `${field.field}:${field.code}`).sort(),
+    ).toEqual([
+      'bestContent:REQUIRED',
+      'findings:REQUIRED',
+      'rationale:REQUIRED',
+      'score:INVALID_SCORE',
+    ])
+  })
+
   it('refuses a finding without aspect, naming the nested field, and keeps the previous analysis', async () => {
     await saveChannel({})
 

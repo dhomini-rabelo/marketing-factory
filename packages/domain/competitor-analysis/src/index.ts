@@ -20,6 +20,7 @@ export * from '@domain/competitor-analysis/application/validation/competitors'
 // @domain/competitor-analysis/application/use-cases
 export * from '@domain/competitor-analysis/application/use-cases/channel/get-channel-analysis'
 export * from '@domain/competitor-analysis/application/use-cases/channel/list-channels'
+export * from '@domain/competitor-analysis/application/use-cases/channel/resolve-channel'
 export * from '@domain/competitor-analysis/application/use-cases/channel/save-channel-analysis'
 export * from '@domain/competitor-analysis/application/use-cases/competitor/list-competitors'
 export * from '@domain/competitor-analysis/application/use-cases/competitor/mark-competitor'

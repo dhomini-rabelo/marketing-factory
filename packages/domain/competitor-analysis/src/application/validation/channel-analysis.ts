@@ -75,7 +75,7 @@ export function validateChannelAnalysisInput(input: ChannelAnalysisInput): void 
   ])
 }
 
-function checkScore(score: number): FieldIssue | null {
+export function checkScore(score: number): FieldIssue | null {
   const isValidScore =
     Number.isInteger(score) && score >= CHANNEL_SCORE_MIN && score <= CHANNEL_SCORE_MAX
 
