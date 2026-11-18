@@ -213,6 +213,15 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/domain/projects:
+    dependencies:
+      '@domain/base':
+        specifier: workspace:*
+        version: link:../base
+      '@modules/utils':
+        specifier: workspace:*
+        version: link:../../modules/utils
+
   packages/modules/utils:
     devDependencies:
       typescript:
