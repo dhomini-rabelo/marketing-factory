@@ -94,6 +94,7 @@ describe('buildCollectionPrompt', () => {
   it('keeps each fact in a single document', () => {
     expect(prompt).toContain('Cada fato fica num documento só')
     expect(prompt).toContain('Um limite ou prazo gravado num documento não se repete em outro')
+    expect(prompt).toContain('sem limites nem prazos; esses números ficam só no documento do assunto')
   })
 
   it('asks to confirm only the prices found and what came only from documentation', () => {

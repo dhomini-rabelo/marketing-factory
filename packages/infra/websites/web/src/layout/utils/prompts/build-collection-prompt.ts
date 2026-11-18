@@ -25,7 +25,7 @@ export function buildCollectionPrompt({ projectId, apiUrl }: PromptInput): strin
     '',
     '## O que gravar',
     '1. Visão geral do produto: o que é, onde roda (web, mobile, extensão) e em que fase está.',
-    '2. Features principais e features secundárias, em dois documentos: o que cada uma permite fazer, em uma ou duas frases.',
+    '2. Features principais e features secundárias, em dois documentos: o que cada uma permite fazer, em uma ou duas frases, sem limites nem prazos; esses números ficam só no documento do assunto.',
     '3. Preços e planos: valores, planos, limites por plano e período de teste que o repositório tiver. O repositório pode estar desatualizado, então abra o documento com "A confirmar: preços tirados do repositório, que pode estar desatualizado." e marque cada valor com "(a confirmar)". Se não houver nada, grave o documento só com "Não encontrado no repositório."',
     '4. Canais, links e ativos: domínio público, links de redes sociais e de lojas de apps, e-mail de contato, logo, cores e fontes da marca, imagens e vídeos de divulgação. Cite cada ativo pelo que ele é, sem caminho de arquivo. Deixe de fora o link do repositório, endereços de desenvolvimento e configurações internas.',
     '5. Palavras-chave de SEO: só as que já estão cadastradas no repositório (meta keywords, título e descrição das páginas públicas, listas de palavras-chave em configurações ou textos de SEO). Não tire palavras do vocabulário do produto. Se não houver nenhuma, não grave este documento.',
