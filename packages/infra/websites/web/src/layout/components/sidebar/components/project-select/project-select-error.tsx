@@ -1,8 +1,8 @@
-type ProjectListErrorProps = {
+type ProjectSelectErrorProps = {
   onRetry: () => void
 }
 
-export function ProjectListError({ onRetry }: ProjectListErrorProps) {
+export function ProjectSelectError({ onRetry }: ProjectSelectErrorProps) {
   return (
     <div role="alert" className="px-2 text-sm">
       <p className="text-white/78">Não foi possível carregar os projetos.</p>
