@@ -5,11 +5,21 @@ import {
   saveChannelViaApi,
   saveCompetitorsViaApi,
   type ChannelAnalysisInput,
+  type ChannelFindingInput,
+  type CompetitorInput,
 } from '@e2e/helpers/project-api'
 import { chooseProjectInSelect, returnToWindow } from '@e2e/helpers/window'
 
 const CHANNEL_LINK_SELECTOR = 'a[href*="/channels/"]'
 const PROJECT_URL_PATTERN = /\/projects\/[\w-]+$/
+const ASPECT_BLOCKS: { key: ChannelFindingInput['aspect']; label: string }[] = [
+  { key: 'format', label: 'Formato' },
+  { key: 'topic', label: 'Assunto' },
+  { key: 'frequency', label: 'Frequência' },
+  { key: 'performance', label: 'Desempenho' },
+  { key: 'cta', label: 'Chamada para ação' },
+]
+const ROLE_KEYS: CompetitorInput['role'][] = ['main', 'secondary']
 
 function buildAnalysis(overrides: Partial<ChannelAnalysisInput> = {}): ChannelAnalysisInput {
   return {
@@ -82,12 +92,13 @@ test('grava cinco canais pela API e mostra a barra por nota, com a marca parcial
   ]
 
   await page.goto(`/projects/${project.id}`)
+  const sidebar = page.getByRole('complementary')
+  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(9)
   for (const [channel, score] of scores) {
     await saveChannelViaApi(request, project.id, channel, buildAnalysis({ score, rationale: `Motivo da nota ${score}` }))
   }
   await returnToWindow(page)
 
-  const sidebar = page.getByRole('complementary')
   const apiChannels = await listChannelsViaApi(request, project.id)
   const expectedKeys = ['seo', 'x', 'linkedin', 'youtube', 'reddit', 'site-pricing', 'instagram', 'tiktok', 'ads']
   await expect.poll(() => sidebarChannelHrefs(page)).toEqual(expectedKeys.map((key) => channelHref(project.id, key)))
@@ -122,6 +133,65 @@ test('grava cinco canais pela API e mostra a barra por nota, com a marca parcial
 
   await sidebar.getByRole('link', { name: /8\s*X\s*parcial sem login/ }).click()
   await expect(page.getByRole('note')).toContainText('Parcial sem login')
+})
+
+test('grava um achado por aspecto pela API e mostra os cinco blocos na ordem fixa', async ({ page, request }) => {
+  const project = await createProjectViaApi(request)
+  await saveCompetitorsViaApi(request, project.id, [
+    { name: 'Promob', role: 'main' },
+    { name: 'Mobilplan', role: 'secondary' },
+  ])
+  const findings = ASPECT_BLOCKS.map(({ key, label }, index) => ({
+    competitor: index % 2 === 0 ? 'Promob' : 'Mobilplan',
+    aspect: key,
+    kind: 'hypothesis' as const,
+    statement: `Achado de ${label}`,
+  }))
+  await saveChannelViaApi(request, project.id, 'seo', buildAnalysis({ findings: [...findings].reverse() }))
+
+  await page.goto(channelHref(project.id, 'seo'))
+  await expect(page.getByRole('heading', { name: 'SEO e blog', level: 1 })).toBeVisible()
+
+  await expect(page.getByRole('heading', { level: 3 })).toHaveText(ASPECT_BLOCKS.map(({ label }) => label))
+  for (const { label } of ASPECT_BLOCKS) {
+    await expect(page.getByRole('region', { name: label })).toContainText(`Achado de ${label}`)
+  }
+})
+
+test('os prompts copiados trazem as chaves de canal, de aspecto e de papel que a API aceita', async ({
+  page,
+  request,
+}) => {
+  const project = await createProjectViaApi(request)
+  const competitors: CompetitorInput[] = ROLE_KEYS.map((role) => ({ name: `Concorrente ${role}`, role }))
+  await saveCompetitorsViaApi(request, project.id, competitors)
+  const channelKeys = (await listChannelsViaApi(request, project.id)).map((summary) => summary.channel)
+  expect(channelKeys).toHaveLength(9)
+  for (const [index, { key }] of ASPECT_BLOCKS.entries()) {
+    const channel = channelKeys[index]
+    const finding: ChannelFindingInput = {
+      competitor: competitors[index % competitors.length].name,
+      aspect: key,
+      kind: 'hypothesis',
+      statement: `Achado ${key}`,
+    }
+    await saveChannelViaApi(request, project.id, channel, buildAnalysis({ findings: [finding] }))
+  }
+
+  await page.goto(`/projects/${project.id}/competitors`)
+  await expect(page.getByRole('heading', { name: 'Lista aguardando sua aprovação' })).toBeVisible()
+  await page.getByRole('button', { name: 'Copiar prompt de concorrentes' }).click()
+  const competitorsPrompt = await page.evaluate(() => navigator.clipboard.readText())
+  expect(competitorsPrompt).toContain(`Papéis aceitos: ${ROLE_KEYS.join(', ')}`)
+
+  await page.getByRole('button', { name: 'Aprovar lista' }).click()
+  await expect(page.getByRole('heading', { name: 'Lista aprovada' })).toBeVisible()
+  await page.getByRole('button', { name: 'Copiar prompt da pesquisa inicial' }).click()
+  const researchPrompt = await page.evaluate(() => navigator.clipboard.readText())
+  for (const channel of channelKeys) {
+    expect(researchPrompt).toContain(`- ${channel}: `)
+  }
+  expect(researchPrompt).toContain(`(${ASPECT_BLOCKS.map(({ key }) => key).join(', ')})`)
 })
 
 test('regrava o canal pela API e vê a análise nova sem duplicar, e mantém o canal ao recarregar', async ({
