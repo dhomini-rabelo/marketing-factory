@@ -1,0 +1,20 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@infra/http": ["./src/app.ts"],
+      "@infra/http/*": ["./src/*"],
+      "@infra/db": ["../db/src/index.ts"],
+      "@infra/db/*": ["../db/src/*"],
+      "@domain/projects": ["../../domain/projects/src/index.ts"],
+      "@domain/projects/*": ["../../domain/projects/src/*"],
+      "@domain/base": ["../../domain/base/src/index.ts"],
+      "@domain/base/*": ["../../domain/base/src/*"],
+      "@modules/utils": ["../../modules/utils/src/index.ts"],
+      "@modules/utils/*": ["../../modules/utils/src/*"]
+    }
+  },
+  "include": ["src", "scripts"]
+}
