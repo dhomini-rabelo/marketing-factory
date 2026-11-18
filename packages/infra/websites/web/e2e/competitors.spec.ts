@@ -41,6 +41,8 @@ test('mostra a lista gravada pela API aguardando aprovação, com o prompt 2 blo
   await expect(page.getByRole('heading', { name: 'Sem lista de concorrentes' })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: LIST_ITEM_NAME })).toContainText('sem lista')
   await expect(page.getByRole('button', { name: 'Aprovar lista' })).toBeDisabled()
+  await expect(page.getByText('Nenhum concorrente definido ainda.')).toBeVisible()
+  await expect(page.getByText(/Não há lista de concorrentes para aprovar/)).toBeVisible()
 
   await saveCompetitorsViaApi(request, project.id, [
     { name: 'Marcenaria Fácil', role: 'secondary' },
