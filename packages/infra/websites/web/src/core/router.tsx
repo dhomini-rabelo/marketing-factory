@@ -6,6 +6,9 @@ const HomePage = lazy(() => import('@/pages/home/page').then((module) => ({ defa
 const NewProjectPage = lazy(() =>
   import('@/pages/new-project/page').then((module) => ({ default: module.NewProjectPage })),
 )
+const ProjectPage = lazy(() =>
+  import('@/pages/project/page').then((module) => ({ default: module.ProjectPage })),
+)
 
 export const router = createBrowserRouter([
   {
@@ -13,6 +16,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/projects/new', element: <NewProjectPage /> },
+      { path: '/projects/:projectId', element: <ProjectPage /> },
     ],
   },
 ])
