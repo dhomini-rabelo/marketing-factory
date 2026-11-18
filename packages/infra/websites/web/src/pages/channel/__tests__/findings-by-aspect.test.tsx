@@ -1,6 +1,10 @@
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { FindingAspect, FindingKind, type Finding } from '@/api/models/channel-analysis'
 import { CompetitorRole, type Competitor } from '@/api/models/competitor'
+import { renderWithProviders } from '@/__tests__/utils/render-with-providers'
+import { ChannelHeader } from '@/pages/channel/components/channel-header'
+import { FindingsByAspect } from '@/pages/channel/components/findings-by-aspect'
 import { groupFindingsByAspect } from '@/pages/channel/utils/group-findings-by-aspect'
 
 function buildCompetitor(name: string, role: CompetitorRole, incorrect = false): Competitor {
@@ -204,5 +208,72 @@ describe('groupFindingsByAspect', () => {
 
     expect(result.blocks).toHaveLength(2)
     expect(result.competitorsWithFinding).toBe(1)
+  })
+})
+
+describe('FindingsByAspect component', () => {
+  const findings = [
+    buildFinding('Planilha de Excel', FindingAspect.CTA, 'cta secundário'),
+    buildFinding('Promob', FindingAspect.CTA, 'cta principal'),
+    buildFinding('Promob', FindingAspect.FORMAT, 'formato longo '.repeat(40)),
+    buildFinding('Marcenaria Fácil', FindingAspect.FORMAT, 'oculto'),
+    buildFinding(' promob', FindingAspect.FORMAT, 'mesmo concorrente'),
+  ]
+  const competitors = [promob, mobilplan, planilha, hidden]
+
+  function renderBlocks() {
+    return renderWithProviders(<FindingsByAspect findingsByAspect={groupFindingsByAspect(findings, competitors)} />)
+  }
+
+  it('renders only the aspect blocks that have findings, in the fixed order', () => {
+    renderBlocks()
+
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
+
+    expect(headings).toEqual(['Formato', 'Chamada para ação'])
+  })
+
+  it('labels every finding with the competitor and a role seal, main before secondary', () => {
+    renderBlocks()
+
+    const block = screen.getByRole('region', { name: 'Chamada para ação' })
+    const rows = within(block).getAllByRole('listitem')
+
+    expect(rows[0]).toHaveTextContent('Promob')
+    expect(rows[0]).toHaveTextContent('Principal')
+    expect(rows[1]).toHaveTextContent('Planilha de Excel')
+    expect(rows[1]).toHaveTextContent('Secundário')
+  })
+
+  it('shows two findings of the same competitor one after the other with the same label', () => {
+    renderBlocks()
+
+    const rows = within(screen.getByRole('region', { name: 'Formato' })).getAllByRole('listitem')
+
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toHaveTextContent('Promob')
+    expect(rows[1]).toHaveTextContent('Promob')
+    expect(rows[1]).toHaveTextContent('mesmo concorrente')
+  })
+
+  it('does not show the hidden competitor and breaks the long statement inside the row', () => {
+    renderBlocks()
+
+    expect(screen.queryByText('oculto')).not.toBeInTheDocument()
+    expect(screen.getByText(/formato longo/)).toHaveClass('break-words')
+  })
+
+  it('shows the coverage as "N de M concorrentes com achado" in the header', () => {
+    renderWithProviders(
+      <ChannelHeader
+        projectId="p1"
+        channelName="SEO e blog"
+        collectedAt="2026-03-15T12:00:00.000Z"
+        findingsByAspect={groupFindingsByAspect(findings, competitors)}
+      />,
+    )
+
+    expect(screen.getByText('2 de 3 concorrentes com achado')).toBeInTheDocument()
+    expect(screen.getByText('4 achados · 4 fatos, 0 hipóteses')).toBeInTheDocument()
   })
 })
