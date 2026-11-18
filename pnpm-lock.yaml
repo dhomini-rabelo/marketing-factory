@@ -213,6 +213,18 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/domain/competitor-analysis:
+    dependencies:
+      '@domain/base':
+        specifier: workspace:*
+        version: link:../base
+      '@domain/projects':
+        specifier: workspace:*
+        version: link:../projects
+      '@modules/utils':
+        specifier: workspace:*
+        version: link:../../modules/utils
+
   packages/domain/projects:
     dependencies:
       '@domain/base':
@@ -227,6 +239,9 @@ importers:
       '@domain/base':
         specifier: workspace:*
         version: link:../../domain/base
+      '@domain/competitor-analysis':
+        specifier: workspace:*
+        version: link:../../domain/competitor-analysis
       '@domain/projects':
         specifier: workspace:*
         version: link:../../domain/projects
@@ -246,6 +261,9 @@ importers:
       '@domain/base':
         specifier: workspace:*
         version: link:../../domain/base
+      '@domain/competitor-analysis':
+        specifier: workspace:*
+        version: link:../../domain/competitor-analysis
       '@domain/projects':
         specifier: workspace:*
         version: link:../../domain/projects

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@domain/base": "workspace:*",
+    "@domain/competitor-analysis": "workspace:*",
     "@domain/projects": "workspace:*",
     "@infra/db": "workspace:*",
     "@modules/utils": "workspace:*",

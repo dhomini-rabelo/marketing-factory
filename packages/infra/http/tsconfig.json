@@ -8,6 +8,8 @@
       "@infra/http/*": ["./src/*"],
       "@infra/db": ["../db/src/index.ts"],
       "@infra/db/*": ["../db/src/*"],
+      "@domain/competitor-analysis": ["../../domain/competitor-analysis/src/index.ts"],
+      "@domain/competitor-analysis/*": ["../../domain/competitor-analysis/src/*"],
       "@domain/projects": ["../../domain/projects/src/index.ts"],
       "@domain/projects/*": ["../../domain/projects/src/*"],
       "@domain/base": ["../../domain/base/src/index.ts"],

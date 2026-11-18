@@ -1,0 +1,6 @@
+export enum CompetitorAnalysisErrorCode {
+  INVALID_URL = 'INVALID_URL',
+  INVALID_SCORE = 'INVALID_SCORE',
+  TOO_MANY_ITEMS = 'TOO_MANY_ITEMS',
+  DUPLICATED_NAME = 'DUPLICATED_NAME',
+}
