@@ -21,7 +21,7 @@ export class SaveDocumentUseCase implements UseCase<Payload, Response> {
   async execute(payload: Payload): Promise<Response> {
     const project = await this.requireProject(payload.projectId)
 
-    validateDocumentFields(payload)
+    this.validateDocumentInput(payload)
 
     const document = this.buildDocument({ project, payload })
 
@@ -30,6 +30,10 @@ export class SaveDocumentUseCase implements UseCase<Payload, Response> {
 
   private async requireProject(projectId: string): Promise<Project> {
     return this.repos.project.getOrThrow(createID(projectId))
+  }
+
+  private validateDocumentInput(payload: Payload): void {
+    validateDocumentFields(payload)
   }
 
   private buildDocument(input: { project: Project; payload: Payload }): Document {
