@@ -394,4 +394,25 @@ describe('competitor routes', () => {
 
     expect(result.status).toBe(201)
   })
+
+  it('saves a channel analysis with the competitor list saved and still pending', async () => {
+    const saved = await saveCompetitors()
+    const result = await sendJson({
+      baseUrl: app.baseUrl,
+      method: 'PUT',
+      path: `/projects/${projectId}/channels/seo`,
+      body: {
+        score: 4,
+        rationale: 'Lista salva e ainda pendente',
+        bestContent: { type: 'Artigo', evidence: 'Primeira página', basis: 'hypothesis' },
+        findings: [],
+      },
+    })
+    const read = await listCompetitors()
+
+    expect(saved.body.approval).toBe('pending')
+    expect(result.status).toBe(201)
+    expect(read.body.approval).toBe('pending')
+    expect(read.body.competitors.map((competitor) => competitor.name)).toEqual(['Acme'])
+  })
 })
