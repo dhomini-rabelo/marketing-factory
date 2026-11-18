@@ -16,7 +16,7 @@ export function buildCompetitorsPrompt({ projectId, apiUrl }: PromptInput): stri
     '',
     'Siga esta ordem:',
     `1. Leia os dados básicos do projeto com GET ${projectUrl}.`,
-    `2. Liste os documentos com GET ${projectUrl}/documents. Se existir um documento de concorrentes, leia-o com GET ${projectUrl}/documents/{slug} e use-o como ponto de partida.`,
+    `2. Liste os documentos com GET ${projectUrl}/documents e leia, com GET ${projectUrl}/documents/{slug}, os que descrevem o produto e as features: eles mostram o que o projeto faz.`,
     `3. Leia a lista já gravada com GET ${projectUrl}/competitors. Cada concorrente vem com "incorrect": true quando o fundador o marcou como "não é concorrente". Não proponha de novo quem está marcado.`,
     '4. Descubra os concorrentes pela busca na web, a partir do que o projeto faz, para quem e em que plataforma.',
     '5. Qualifique cada concorrente antes de qualquer canal: foco de mercado, serviços, features e público.',

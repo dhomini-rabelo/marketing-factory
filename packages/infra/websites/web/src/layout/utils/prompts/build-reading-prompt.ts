@@ -14,6 +14,8 @@ export function buildReadingPrompt({ projectId, apiUrl }: PromptInput): string {
     '4. Só então crie o conteúdo.',
     '',
     'Se a lista de documentos vier vazia, avise que ainda não há nada coletado e sugira rodar o prompt de coleta no repositório do projeto.',
-    'Se nenhum documento for relevante ao canal pedido, diga qual documento falta. Não invente informação sobre o produto.',
+    'Se faltar informação para o canal pedido, diga qual falta. Não invente informação sobre o produto.',
+    'O prompt de coleta só grava o que está no repositório do produto. Público-alvo, dores, proposta de valor, diferenciais, tom de voz, depoimentos e números de clientes não vêm dele: não sugira rodar a coleta de novo para isso; peça essas informações ao usuário.',
+    `Concorrentes não ficam nos documentos: leia a lista com GET ${projectUrl}/competitors. Se vier vazia, sugira o prompt "Descobrir concorrentes" da página Concorrentes do app.`,
   ].join('\n')
 }

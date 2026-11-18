@@ -25,11 +25,11 @@ describe('buildCompetitorsPrompt', () => {
     expect(otherPrompt).not.toContain(API_URL)
   })
 
-  it('asks to read the basic data and the documents, starting from the competitors document', () => {
+  it('asks to read the basic data and the product and features documents, with no competitors document', () => {
     expect(prompt).toContain(`GET ${API_URL}/projects/${PROJECT_ID}.`)
-    expect(prompt).toContain(`GET ${API_URL}/projects/${PROJECT_ID}/documents.`)
-    expect(prompt).toContain('Se existir um documento de concorrentes')
-    expect(prompt).toContain('use-o como ponto de partida')
+    expect(prompt).toContain(`GET ${API_URL}/projects/${PROJECT_ID}/documents e leia`)
+    expect(prompt).toContain(`GET ${API_URL}/projects/${PROJECT_ID}/documents/{slug}, os que descrevem o produto e as features`)
+    expect(prompt).not.toContain('documento de concorrentes')
   })
 
   it('asks to discover the competitors by searching the web', () => {

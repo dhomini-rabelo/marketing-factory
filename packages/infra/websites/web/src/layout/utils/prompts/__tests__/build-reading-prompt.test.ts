@@ -45,8 +45,21 @@ describe('buildReadingPrompt', () => {
     expect(prompt).toContain('rodar o prompt de coleta')
   })
 
-  it('says which document is missing, without inventing, when none fits the channel', () => {
-    expect(prompt).toContain('Se nenhum documento for relevante ao canal pedido, diga qual documento falta')
+  it('says which information is missing, without inventing, when the channel needs more', () => {
+    expect(prompt).toContain('Se faltar informação para o canal pedido, diga qual falta')
     expect(prompt).toContain('Não invente')
+  })
+
+  it('asks the user for what the collection never gathers, instead of running it again', () => {
+    expect(prompt).toContain('O prompt de coleta só grava o que está no repositório do produto')
+    expect(prompt).toContain('Público-alvo, dores, proposta de valor, diferenciais, tom de voz')
+    expect(prompt).toContain('não sugira rodar a coleta de novo para isso')
+    expect(prompt).toContain('peça essas informações ao usuário')
+  })
+
+  it('reads the competitors from their list and points to the competitors prompt when it is empty', () => {
+    expect(prompt).toContain(`GET ${PROJECT_URL}/competitors`)
+    expect(prompt).toContain('Concorrentes não ficam nos documentos')
+    expect(prompt).toContain('"Descobrir concorrentes" da página Concorrentes')
   })
 })
