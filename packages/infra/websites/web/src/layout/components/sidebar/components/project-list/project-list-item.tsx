@@ -7,8 +7,8 @@ type ProjectListItemProps = {
   project: Project
 }
 
-const ITEM_CLASSES =
-  'flex w-full items-center gap-2.5 rounded-2 px-2 py-[9px] text-sm font-medium text-white/78 hover:bg-white/7'
+const ITEM_CLASSES = 'flex w-full items-center gap-2.5 rounded-2 px-2 py-[9px] text-sm hover:bg-white/7'
+const INACTIVE_ITEM_CLASSES = 'font-medium text-white/78'
 const ACTIVE_ITEM_CLASSES = 'font-bold text-white'
 const ACTIVE_NAME_CLASSES = 'border-b-2 border-white pb-px'
 
@@ -18,7 +18,7 @@ export function ProjectListItem({ project }: ProjectListItemProps) {
   return (
     <NavLink
       to={`/projects/${project.id}`}
-      className={({ isActive }) => cn(ITEM_CLASSES, isActive && ACTIVE_ITEM_CLASSES)}
+      className={({ isActive }) => cn(ITEM_CLASSES, isActive ? ACTIVE_ITEM_CLASSES : INACTIVE_ITEM_CLASSES)}
     >
       {({ isActive }) => (
         <>

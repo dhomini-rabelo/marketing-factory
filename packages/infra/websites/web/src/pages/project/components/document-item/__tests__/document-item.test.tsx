@@ -70,6 +70,18 @@ describe('DocumentItem', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
+  it('turns a markdown title into a heading and bold text into strong', async () => {
+    const { user } = renderItem('# Público\n\nFalamos com o **cliente jovem** da loja')
+
+    await user.click(screen.getByRole('button', { name: /Visão geral/ }))
+
+    const heading = await screen.findByRole('heading', { name: 'Público', level: 1 })
+    expect(heading).toHaveClass('font-bold', 'text-xl')
+    const strong = screen.getByText('cliente jovem')
+    expect(strong.tagName).toBe('STRONG')
+    expect(strong).toHaveClass('font-bold')
+  })
+
   it('formats the markdown, shows the sheet and closes on a second click', async () => {
     const { user } = renderItem('### Título interno\n\n- primeiro\n- segundo')
 
