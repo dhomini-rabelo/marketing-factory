@@ -211,7 +211,7 @@ describe('project routes', () => {
     const allowed = await fetch(`${app.baseUrl}/projects`, {
       method: 'OPTIONS',
       headers: {
-        Origin: 'http://localhost:5173',
+        Origin: 'http://localhost:7342',
         'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'content-type',
       },
@@ -225,7 +225,7 @@ describe('project routes', () => {
       },
     })
 
-    expect(allowed.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
+    expect(allowed.headers.get('access-control-allow-origin')).toBe('http://localhost:7342')
     expect(denied.headers.get('access-control-allow-origin')).toBeNull()
   })
 })

@@ -1,7 +1,7 @@
 import { expect, type APIRequestContext } from '@playwright/test'
 import { uniqueName } from '@e2e/helpers/unique-name'
 
-export const API_URL = 'http://127.0.0.1:3333'
+export const API_URL = 'http://127.0.0.1:7341'
 
 const HTTP_OK = 200
 const HTTP_CREATED = 201

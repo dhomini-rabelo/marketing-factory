@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildCollectionPrompt } from '@/layout/utils/prompts/build-collection-prompt'
 
 const PROJECT_ID = '3f1c2a9e-7b4d-4e0a-9d51-0c6a8e2b7f14'
-const API_URL = 'http://127.0.0.1:3333'
+const API_URL = 'http://127.0.0.1:7341'
 const CATEGORIES = [
   'Visão geral do produto',
   'Features importantes e de média importância',

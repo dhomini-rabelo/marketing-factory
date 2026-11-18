@@ -1,8 +1,8 @@
 export const HOST = '127.0.0.1'
 
 const DEFAULT_DATABASE_PATH = './data/marketing-factory.sqlite'
-const DEFAULT_PORT = 3333
-const DEFAULT_WEB_ORIGIN = 'http://localhost:5173'
+const DEFAULT_PORT = 7341
+const DEFAULT_WEB_ORIGIN = 'http://localhost:7342'
 
 export function readEnv(): { databasePath: string; port: number; webOrigin: string } {
   return {

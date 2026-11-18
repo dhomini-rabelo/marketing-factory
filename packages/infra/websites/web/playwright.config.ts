@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defineConfig } from '@playwright/test'
 
-const WEB_URL = 'http://localhost:5173'
-const API_URL = 'http://127.0.0.1:3333'
+const WEB_URL = 'http://localhost:7342'
+const API_URL = 'http://127.0.0.1:7341'
 const SERVER_TIMEOUT_MS = 120_000
 const databasePath = join(mkdtempSync(join(tmpdir(), 'marketing-factory-e2e-')), 'e2e.sqlite')
 
@@ -33,7 +33,7 @@ export default defineConfig({
       timeout: SERVER_TIMEOUT_MS,
     },
     {
-      command: 'pnpm --filter web build && pnpm --filter web exec vite preview --port 5173 --strictPort',
+      command: 'pnpm --filter web build && pnpm --filter web exec vite preview --port 7342 --strictPort',
       url: WEB_URL,
       reuseExistingServer: false,
       timeout: SERVER_TIMEOUT_MS,
