@@ -1,11 +1,13 @@
 import type { NextFunction, Request, Response } from 'express'
 import { ZodError } from 'zod'
 import { DangerErrors, DomainError } from '@domain/base'
+import { NoActiveCompetitorsError } from '@domain/competitor-analysis'
 import { FieldErrorCode, FieldIssue, FieldsValidationError } from '@domain/projects'
 import { HttpStatus } from '@modules/utils'
 import {
   describeFieldIssue,
   describeFieldIssues,
+  describeNoActiveCompetitors,
   describeNotFound,
 } from '@infra/http/services/error-messages'
 
@@ -35,7 +37,16 @@ export function errorHandler(
 
   if (error instanceof DomainError && error.response.errorType === DangerErrors.NOT_FOUND) {
     return sendError(response, HttpStatus.NOT_FOUND, {
-      error: { code: error.response.code, message: describeNotFound(error.response.code) },
+      error: {
+        code: error.response.code,
+        message: describeNotFound(error.response.code, error.response.variables),
+      },
+    })
+  }
+
+  if (error instanceof NoActiveCompetitorsError) {
+    return sendError(response, HttpStatus.CONFLICT, {
+      error: { code: 'NO_ACTIVE_COMPETITORS', message: describeNoActiveCompetitors() },
     })
   }
 
@@ -76,9 +87,23 @@ function sendValidationError(response: Response, issues: FieldIssue[]) {
 }
 
 function listSchemaIssues(error: ZodError): FieldIssue[] {
-  const fields = new Set(error.issues.map((issue) => String(issue.path[0] ?? 'body')))
+  const fields = new Set(error.issues.map((issue) => formatIssuePath(issue.path)))
 
   return [...fields].map((field) => ({ field, code: FieldErrorCode.REQUIRED }))
+}
+
+function formatIssuePath(path: PropertyKey[]): string {
+  if (path.length === 0) {
+    return 'body'
+  }
+
+  return path.reduce<string>((formatted, segment, position) => {
+    if (typeof segment === 'number') {
+      return `${formatted}[${segment}]`
+    }
+
+    return position === 0 ? String(segment) : `${formatted}.${String(segment)}`
+  }, '')
 }
 
 function readBodyParserErrorType(error: unknown): string | undefined {
