@@ -34,7 +34,7 @@ test('abre sem projeto e cria o primeiro por "Novo projeto"', async ({ page }) =
 
   await expect(page).toHaveURL(PROJECT_URL_PATTERN)
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
-  await expect(page.getByRole('link', { name })).toBeVisible()
+  await expect(page.getByRole('button', { name: `Trocar de projeto. Atual: ${name}` })).toBeVisible()
 })
 
 test('mostra o cabeçalho e os dois cartões de prompt com código e endereço reais', async ({ page, request }) => {
@@ -66,7 +66,7 @@ test('edita os dados do projeto por "Editar dados" e "Salvar"', async ({ page, r
   await page.getByRole('button', { name: 'Salvar' }).click()
 
   await expect(page.getByRole('heading', { name: newName, level: 1 })).toBeVisible()
-  await expect(page.getByRole('link', { name: newName })).toBeVisible()
+  await expect(page.getByRole('button', { name: `Trocar de projeto. Atual: ${newName}` })).toBeVisible()
 })
 
 test('grava documentos pela API e vê a lista ao voltar à janela, expande e regrava sem duplicar', async ({
@@ -105,12 +105,14 @@ test('cria um segundo projeto, troca de projeto e mantém o projeto ao recarrega
   const secondName = uniqueName('Segundo')
 
   await page.goto(`/projects/${first.id}`)
-  await page.getByRole('complementary').getByRole('link', { name: 'Novo projeto' }).click()
+  await page.getByRole('complementary').getByRole('button', { name: /Trocar de projeto/ }).click()
+  await page.getByRole('menuitem', { name: 'Novo projeto' }).click()
   await fillProjectForm(page, secondName)
   await page.getByRole('button', { name: 'Criar projeto' }).click()
   await expect(page.getByRole('heading', { name: secondName, level: 1 })).toBeVisible()
 
-  await page.getByRole('complementary').getByRole('link', { name: first.name }).click()
+  await page.getByRole('complementary').getByRole('button', { name: /Trocar de projeto/ }).click()
+  await page.getByRole('menuitemradio', { name: new RegExp(first.name) }).click()
   await expect(page.getByRole('heading', { name: first.name, level: 1 })).toBeVisible()
 
   await page.reload()
