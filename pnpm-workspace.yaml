@@ -3,3 +3,5 @@ packages:
   - packages/modules/*
   - packages/infra/*
   - packages/infra/websites/*
+onlyBuiltDependencies:
+  - better-sqlite3

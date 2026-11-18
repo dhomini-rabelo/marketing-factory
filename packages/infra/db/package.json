@@ -1,0 +1,21 @@
+{
+  "name": "@infra/db",
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@domain/base": "workspace:*",
+    "@domain/projects": "workspace:*",
+    "@modules/utils": "workspace:*",
+    "better-sqlite3": "13.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0"
+  }
+}
