@@ -76,6 +76,31 @@ describe('buildCollectionPrompt', () => {
     expect(prompt).toContain('Sem link do repositório, caminho de arquivo, comando, resposta da API')
   })
 
+  it('uses repository documentation as a source but checks in the code what the code can confirm', () => {
+    expect(prompt).toContain('pastas de documentação e de contexto (como docs/ e .claude/) valem como fonte')
+    expect(prompt).toContain('confira no código: se divergir, vale o código; se não achar no código, deixe de fora')
+  })
+
+  it('does not turn what was not found into a statement about the product', () => {
+    expect(prompt).toContain('O que você não achou não vira afirmação sobre o produto')
+    expect(prompt).toContain('não liste o que não encontrou; a única exceção é o documento de preços')
+  })
+
+  it('leaves out form and setup details that do not help to talk about the product', () => {
+    expect(prompt).toContain('Grave só o detalhe que ajuda a falar do produto')
+    expect(prompt).toContain('tamanho mínimo de senha, limite de caracteres de um campo')
+  })
+
+  it('keeps each fact in a single document', () => {
+    expect(prompt).toContain('Cada fato fica num documento só')
+    expect(prompt).toContain('Um limite ou prazo gravado num documento não se repete em outro')
+  })
+
+  it('asks to confirm only the prices found and what came only from documentation', () => {
+    expect(prompt).toContain('os preços que você achou e o que veio só da documentação, sem como conferir no código')
+    expect(prompt).toContain('Não peça para confirmar o que você já conferiu no código')
+  })
+
   it('forbids inventing and allows the product to be at an early stage', () => {
     expect(prompt).toContain('Não invente')
     expect(prompt).toContain('fase inicial')
