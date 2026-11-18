@@ -150,3 +150,9 @@ vite.config.ts.timestamp-*
 
 # project-factory
 /.claude/tmp/orquestracoes/
+
+# marketing-factory
+data/
+*.sqlite*
+playwright-report
+test-results

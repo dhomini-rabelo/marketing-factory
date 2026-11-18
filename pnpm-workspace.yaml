@@ -1,0 +1,5 @@
+packages:
+  - packages/domain/*
+  - packages/modules/*
+  - packages/infra/*
+  - packages/infra/websites/*

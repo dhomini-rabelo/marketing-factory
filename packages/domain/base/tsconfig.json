@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@domain/base": ["./src/index.ts"],
+      "@domain/base/*": ["./src/*"],
+      "@modules/utils": ["../../modules/utils/src/index.ts"],
+      "@modules/utils/*": ["../../modules/utils/src/*"]
+    }
+  },
+  "include": ["src"]
+}
