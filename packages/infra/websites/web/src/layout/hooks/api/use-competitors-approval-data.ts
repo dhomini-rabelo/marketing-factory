@@ -17,6 +17,7 @@ export function useCompetitorsApprovalData(projectId: string) {
     },
     actions: {
       mutateAsync: mutation.mutateAsync,
+      reset: mutation.reset,
     },
   }
 }

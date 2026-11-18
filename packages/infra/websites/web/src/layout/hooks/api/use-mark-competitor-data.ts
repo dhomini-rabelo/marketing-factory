@@ -23,6 +23,7 @@ export function useMarkCompetitorData(projectId: string) {
     },
     actions: {
       mutateAsync: mutation.mutateAsync,
+      reset: mutation.reset,
     },
   }
 }

@@ -29,7 +29,13 @@ export function CompetitorsPage() {
   const hasActionError = markRequest.state.error !== null || approvalRequest.state.error !== null
 
   function handleToggleIncorrect(competitor: Competitor) {
+    approvalRequest.actions.reset()
     markRequest.actions.mutateAsync({ competitorId: competitor.id, incorrect: !competitor.incorrect }).catch(() => undefined)
+  }
+
+  function handleApprovalChange(approved: boolean) {
+    markRequest.actions.reset()
+    approvalRequest.actions.mutateAsync(approved).catch(() => undefined)
   }
 
   return (
@@ -62,8 +68,8 @@ export function CompetitorsPage() {
         activeCount={active.length}
         markedCount={marked.length}
         isPending={isPending}
-        onApprove={() => approvalRequest.actions.mutateAsync(true).catch(() => undefined)}
-        onReopen={() => approvalRequest.actions.mutateAsync(false).catch(() => undefined)}
+        onApprove={() => handleApprovalChange(true)}
+        onReopen={() => handleApprovalChange(false)}
       />
       <PromptsPair projectId={projectId} isApproved={isApproved} />
       <CompetitorsList competitors={competitors} isPending={isPending} onToggleIncorrect={handleToggleIncorrect} />

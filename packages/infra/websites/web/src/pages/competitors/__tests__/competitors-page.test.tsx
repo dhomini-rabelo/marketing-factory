@@ -191,6 +191,26 @@ describe('CompetitorsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar a mudança.')
   })
 
+  it('clears the failed mark alert once the list is approved', async () => {
+    let list = buildList([mainCompetitor])
+    const { user } = renderPage({
+      [listRoute]: () => ({ body: list }),
+      [markRoute('c1')]: serverError,
+      [approvalRoute]: () => {
+        list = buildList([mainCompetitor], CompetitorApproval.APPROVED)
+        return { body: { approval: CompetitorApproval.APPROVED } }
+      },
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Não é concorrente' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar a mudança.')
+
+    await user.click(screen.getByRole('button', { name: 'Aprovar lista' }))
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Lista aprovada' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('keeps "Aprovar lista" disabled when every competitor is marked', async () => {
     renderPage({ [listRoute]: { body: buildList([markedCompetitor]) } })
 
