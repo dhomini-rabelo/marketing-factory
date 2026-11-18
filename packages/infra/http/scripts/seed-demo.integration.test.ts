@@ -1,7 +1,10 @@
 import { execFile } from 'node:child_process'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { Channel, CompetitorRole } from '@domain/competitor-analysis'
+import type { ChannelAnalysisHttp, ChannelSummaryHttp } from '@infra/http/presenters/channel-analysis-presenter'
+import type { CompetitorHttp } from '@infra/http/presenters/competitor-presenter'
 import type { DocumentListItemHttp } from '@infra/http/presenters/document-presenter'
 import type { ProjectHttp } from '@infra/http/presenters/project-presenter'
 import { createTestApp, TestApp } from '@infra/http/__tests__/utils/create-test-app'
@@ -84,5 +87,138 @@ describe('seed-demo script', () => {
 
   it('rejects an invalid --projects value', async () => {
     await expect(runSeed(['--projects', 'abc'])).rejects.toMatchObject({ code: 1 })
+  })
+
+  describe('with --coleta', () => {
+    beforeEach(() => {
+      app.database.exec(
+        'DELETE FROM channel_findings; DELETE FROM channel_analyses; DELETE FROM competitors; DELETE FROM competitor_approvals; DELETE FROM documents; DELETE FROM projects',
+      )
+    })
+
+    async function findProjectId(name: string) {
+      const projects = await sendJson<{ projects: ProjectHttp[] }>({ baseUrl: app.baseUrl, method: 'GET', path: '/projects' })
+      return projects.body.projects.find((project) => project.name === name)?.id
+    }
+
+    it('saves six competitors with one marked and the list waiting for approval', async () => {
+      await runSeed(['--coleta', 'Bancada'])
+
+      const projectId = await findProjectId('Bancada')
+      const list = await sendJson<{ approval: string; competitors: CompetitorHttp[] }>({
+        baseUrl: app.baseUrl,
+        method: 'GET',
+        path: `/projects/${projectId}/competitors`,
+      })
+
+      expect(list.body.approval).toBe('pending')
+      expect(list.body.competitors).toHaveLength(6)
+      const active = list.body.competitors.filter((competitor) => !competitor.incorrect)
+      expect(active.filter((competitor) => competitor.role === CompetitorRole.MAIN)).toHaveLength(2)
+      expect(active.filter((competitor) => competitor.role === CompetitorRole.SECONDARY)).toHaveLength(3)
+      expect(list.body.competitors.filter((competitor) => competitor.incorrect).map((competitor) => competitor.name)).toEqual([
+        'Marcenaria Fácil',
+      ])
+    })
+
+    it('saves the channel analyses with the findings counts of the visual data and leaves tiktok and ads without collection', async () => {
+      await runSeed(['--coleta', 'Bancada'])
+
+      const projectId = await findProjectId('Bancada')
+      const channels = await sendJson<{ channels: ChannelSummaryHttp[] }>({
+        baseUrl: app.baseUrl,
+        method: 'GET',
+        path: `/projects/${projectId}/channels`,
+      })
+      const summary = Object.fromEntries(
+        channels.body.channels.map((channel) => [channel.channel, { collected: channel.collected, score: channel.score }]),
+      )
+      expect(summary).toEqual({
+        seo: { collected: true, score: 9 },
+        linkedin: { collected: true, score: 8 },
+        'site-pricing': { collected: true, score: 6 },
+        [Channel.X_NETWORK]: { collected: true, score: 5 },
+        youtube: { collected: true, score: 4 },
+        reddit: { collected: true, score: 2 },
+        instagram: { collected: true, score: 0 },
+        tiktok: { collected: false, score: null },
+        ads: { collected: false, score: null },
+      })
+
+      const findingsCount: Record<string, number> = {}
+      for (const channel of ['seo', 'linkedin', 'site-pricing', 'x', 'youtube', 'reddit', 'instagram']) {
+        const analysis = await sendJson<ChannelAnalysisHttp>({
+          baseUrl: app.baseUrl,
+          method: 'GET',
+          path: `/projects/${projectId}/channels/${channel}`,
+        })
+        findingsCount[channel] = analysis.body.findings.length
+      }
+      expect(findingsCount).toEqual({ seo: 9, linkedin: 8, 'site-pricing': 6, [Channel.X_NETWORK]: 5, youtube: 4, reddit: 2, instagram: 0 })
+    })
+
+    it('writes the seo analysis with seven facts, two hypotheses, four aspects and four of five competitors', async () => {
+      await runSeed(['--coleta', 'Bancada'])
+
+      const projectId = await findProjectId('Bancada')
+      const analysis = await sendJson<ChannelAnalysisHttp>({
+        baseUrl: app.baseUrl,
+        method: 'GET',
+        path: `/projects/${projectId}/channels/seo`,
+      })
+
+      const findings = analysis.body.findings
+      expect(findings.filter((finding) => finding.kind === 'fact')).toHaveLength(7)
+      expect(findings.filter((finding) => finding.kind === 'hypothesis')).toHaveLength(2)
+      expect(new Set(findings.map((finding) => finding.aspect)).size).toBe(4)
+      expect(new Set(findings.map((finding) => finding.competitor)).size).toBe(4)
+      expect(analysis.body.bestContent.basis).toBe('fact')
+      for (const fact of findings.filter((finding) => finding.kind === 'fact')) {
+        expect(fact.url).toMatch(/^https:\/\//)
+        expect(fact.excerpt).toBeTruthy()
+      }
+    })
+
+    it('approves the list only with --aprovada', async () => {
+      await runSeed(['--coleta', 'Bancada', '--aprovada'])
+
+      const projectId = await findProjectId('Bancada')
+      const list = await sendJson<{ approval: string }>({
+        baseUrl: app.baseUrl,
+        method: 'GET',
+        path: `/projects/${projectId}/competitors`,
+      })
+      expect(list.body.approval).toBe('approved')
+    })
+
+    it('does not save a list or analyses without --coleta', async () => {
+      await runSeed([])
+
+      const projectId = await findProjectId('Bancada')
+      const list = await sendJson<{ approval: string; competitors: CompetitorHttp[] }>({
+        baseUrl: app.baseUrl,
+        method: 'GET',
+        path: `/projects/${projectId}/competitors`,
+      })
+      const channels = await sendJson<{ channels: ChannelSummaryHttp[] }>({
+        baseUrl: app.baseUrl,
+        method: 'GET',
+        path: `/projects/${projectId}/channels`,
+      })
+      expect(list.body.competitors).toHaveLength(0)
+      expect(channels.body.channels.every((channel) => !channel.collected)).toBe(true)
+    })
+
+    it('rejects a project the seed does not create without creating anything', async () => {
+      await expect(runSeed(['--coleta', 'Projeto Inexistente'])).rejects.toMatchObject({ code: 1 })
+
+      const projects = await sendJson<{ projects: ProjectHttp[] }>({ baseUrl: app.baseUrl, method: 'GET', path: '/projects' })
+      expect(projects.body.projects).toHaveLength(0)
+    })
+
+    it('rejects --coleta without a project name and --aprovada without --coleta', async () => {
+      await expect(runSeed(['--coleta'])).rejects.toMatchObject({ code: 1 })
+      await expect(runSeed(['--aprovada'])).rejects.toMatchObject({ code: 1 })
+    })
   })
 })
