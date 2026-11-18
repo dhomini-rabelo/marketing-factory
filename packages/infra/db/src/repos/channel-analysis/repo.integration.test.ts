@@ -3,15 +3,17 @@ import { Worker } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ID } from '@domain/base'
 import {
+  CHANNEL_ORDER,
   Channel,
   ChannelAnalysis,
   Finding,
   FindingAspect,
   FindingKind,
 } from '@domain/competitor-analysis'
-import { Project, ProjectPhase, ProjectPlatform } from '@domain/projects'
+import { Document, Project, ProjectPhase, ProjectPlatform } from '@domain/projects'
 import { createTempDatabase, TempDatabase } from '@infra/db/__tests__/temp-database'
 import { SqliteChannelAnalysisRepository } from '@infra/db/repos/channel-analysis/repo'
+import { SqliteDocumentRepository } from '@infra/db/repos/document/repo'
 import { SqliteProjectRepository } from '@infra/db/repos/project/repo'
 
 function buildFinding(statement: string, aspect = FindingAspect.FORMAT): Finding {
@@ -163,8 +165,8 @@ describe('SqliteChannelAnalysisRepository', () => {
     ])
   })
 
-  it('accepts simultaneous writes of different channels from separate connections', async () => {
-    const channels = [Channel.SEO, Channel.SITE_PRICING, Channel.LINKEDIN, Channel.INSTAGRAM, Channel.YOUTUBE]
+  it('accepts nine simultaneous writes of different channels from separate connections', async () => {
+    const channels = [...CHANNEL_ORDER]
     const repositories = channels.map(() => new SqliteChannelAnalysisRepository(temp.reopen()))
 
     await Promise.all(
@@ -174,8 +176,58 @@ describe('SqliteChannelAnalysisRepository', () => {
     )
     const collected = await repository.listCollected(projectId)
 
+    expect(channels).toHaveLength(9)
     expect(collected.map((analysis) => analysis.props.channel)).toEqual(channels)
     collected.forEach((analysis) => expect(analysis.props.findings).toHaveLength(2))
+  })
+
+  it('preserves accents and emoji when saving and reading an analysis', async () => {
+    const analysis = ChannelAnalysis.create({
+      projectId,
+      channel: Channel.INSTAGRAM,
+      score: 8,
+      rationale: 'Presença forte, com ação constante 🚀',
+      bestContent: { type: 'Vídeo curto', evidence: 'Maior alcance 🎯', basis: FindingKind.FACT },
+      findings: [buildFinding('Publicação diária com emoção 🔥 e conversão')],
+      collectedAt: new Date('2026-11-18T10:00:00.000Z'),
+    })
+
+    await repository.replaceForChannel(analysis)
+    const found = await repository.findByChannel({ projectId, channel: Channel.INSTAGRAM })
+
+    expect(found?.props.rationale).toBe('Presença forte, com ação constante 🚀')
+    expect(found?.props.bestContent.evidence).toBe('Maior alcance 🎯')
+    expect(found?.props.findings[0].statement).toBe('Publicação diária com emoção 🔥 e conversão')
+    expect(found?.props).toEqual(analysis.props)
+  })
+
+  it('leaves the projects and documents tables unchanged after saving channels', async () => {
+    const now = new Date('2026-11-18T10:00:00.000Z')
+    await new SqliteDocumentRepository(temp.database).saveByTitle(
+      Document.create({
+        projectId,
+        slug: 'positioning',
+        title: 'Positioning',
+        description: 'About positioning',
+        body: 'Body',
+        createdAt: now,
+        updatedAt: now,
+      }),
+    )
+    const readAppTables = () => ({
+      projects: temp.database.prepare('SELECT * FROM projects ORDER BY id').all(),
+      documents: temp.database.prepare('SELECT * FROM documents ORDER BY id').all(),
+    })
+    const before = readAppTables()
+
+    for (const channel of CHANNEL_ORDER) {
+      await repository.replaceForChannel(buildAnalysis({ projectId, channel }))
+    }
+    await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SEO, score: 2 }))
+
+    expect(before.projects).toHaveLength(1)
+    expect(before.documents).toHaveLength(1)
+    expect(readAppTables()).toEqual(before)
   })
 
   it('keeps the last write whole when the same channel is written from separate connections', async () => {
