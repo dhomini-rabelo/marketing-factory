@@ -1,3 +1,5 @@
+import { DEMO_CHANNEL_ANALYSES, DEMO_COMPETITORS, MARKED_COMPETITOR_NAMES } from './seed-demo-collection'
+
 type DemoDocument = {
   title: string
   description: string
@@ -14,6 +16,16 @@ type DemoProject = {
 
 type CreatedProject = {
   id: string
+}
+
+type SavedCompetitors = {
+  competitors: { id: string; name: string }[]
+}
+
+type SeedOptions = {
+  extraProjectsCount: number
+  collectionProjectName: string | null
+  approveCompetitors: boolean
 }
 
 const DEFAULT_API_URL = 'http://127.0.0.1:3333'
@@ -183,29 +195,101 @@ async function saveDocuments(apiUrl: string, projectId: string, documents: DemoD
   }
 }
 
-async function seedDemo(apiUrl: string, extraProjectsCount: number) {
+function readCollectionProjectName(args: string[]): string | null {
+  const flagIndex = args.indexOf('--coleta')
+  if (flagIndex === -1) return null
+
+  const projectName = args[flagIndex + 1]
+  if (!projectName || projectName.startsWith('--')) {
+    throw new Error('--coleta espera o nome de um projeto')
+  }
+  return projectName
+}
+
+function readSeedOptions(args: string[]): SeedOptions {
+  const options: SeedOptions = {
+    extraProjectsCount: readExtraProjectsCount(args),
+    collectionProjectName: readCollectionProjectName(args),
+    approveCompetitors: args.includes('--aprovada'),
+  }
+  if (options.approveCompetitors && options.collectionProjectName === null) {
+    throw new Error('--aprovada só vale junto com --coleta')
+  }
+  return options
+}
+
+function listProjectNames(extraProjectsCount: number): string[] {
+  const extraNames = Array.from({ length: extraProjectsCount }, (_, index) => extraProjectName(index + 1))
+  return [...DEMO_PROJECTS.map((project) => project.name), ...extraNames]
+}
+
+function extraProjectName(position: number): string {
+  return `Projeto de teste ${position}`
+}
+
+async function saveCollection(apiUrl: string, projectId: string, approveCompetitors: boolean) {
+  const saved = await sendJson<SavedCompetitors>(apiUrl, 'PUT', `/projects/${projectId}/competitors`, {
+    competitors: DEMO_COMPETITORS,
+  })
+
+  for (const name of MARKED_COMPETITOR_NAMES) {
+    const savedCompetitor = saved.competitors.find((competitor) => competitor.name === name)
+    await sendJson(apiUrl, 'PATCH', `/projects/${projectId}/competitors/${encodeURIComponent(savedCompetitor?.id ?? name)}`, {
+      incorrect: true,
+    })
+  }
+
+  if (approveCompetitors) {
+    await sendJson(apiUrl, 'PUT', `/projects/${projectId}/competitors-approval`, { approved: true })
+  }
+
+  for (const { channel, ...analysis } of DEMO_CHANNEL_ANALYSES) {
+    await sendJson(apiUrl, 'PUT', `/projects/${projectId}/channels/${channel}`, analysis)
+  }
+}
+
+async function seedDemo(apiUrl: string, options: SeedOptions) {
+  if (options.collectionProjectName !== null) {
+    const knownNames = listProjectNames(options.extraProjectsCount)
+    if (!knownNames.includes(options.collectionProjectName)) {
+      throw new Error(`--coleta recebeu o projeto "${options.collectionProjectName}", que este seed não cria: ${knownNames.join(', ')}`)
+    }
+  }
+
+  const projectIdsByName = new Map<string, string>()
+
   for (const { documents, ...project } of DEMO_PROJECTS) {
     const created = await createProject(apiUrl, project)
+    projectIdsByName.set(project.name, created.id)
     await saveDocuments(apiUrl, created.id, documents)
   }
 
-  for (let position = 1; position <= extraProjectsCount; position += 1) {
-    await createProject(apiUrl, {
-      name: `Projeto de teste ${position}`,
+  for (let position = 1; position <= options.extraProjectsCount; position += 1) {
+    const created = await createProject(apiUrl, {
+      name: extraProjectName(position),
       platform: 'web',
       phase: 'no_customers',
       description: `Projeto extra ${position} para testar a lista longa da barra lateral.`,
     })
+    projectIdsByName.set(extraProjectName(position), created.id)
+  }
+
+  if (options.collectionProjectName !== null) {
+    await saveCollection(apiUrl, projectIdsByName.get(options.collectionProjectName) as string, options.approveCompetitors)
   }
 }
 
 const apiUrl = process.env.API_URL || DEFAULT_API_URL
-const extraProjectsCount = readExtraProjectsCount(process.argv.slice(2))
+const options = readSeedOptions(process.argv.slice(2))
 
-seedDemo(apiUrl, extraProjectsCount)
+seedDemo(apiUrl, options)
   .then(() => {
-    const total = DEMO_PROJECTS.length + extraProjectsCount
+    const total = DEMO_PROJECTS.length + options.extraProjectsCount
     console.log(`${total} projetos criados em ${apiUrl}`)
+    if (options.collectionProjectName !== null) {
+      const approval = options.approveCompetitors ? 'aprovada' : 'aguardando aprovação'
+      console.log(`Coleta gravada em ${options.collectionProjectName}: ${DEMO_COMPETITORS.length} concorrentes (${approval}) e ${DEMO_CHANNEL_ANALYSES.length} canais`)
+    }
   })
   .catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error)
