@@ -6,6 +6,7 @@
   "packageManager": "pnpm@12.21.0",
   "scripts": {
     "dev": "pnpm --parallel --filter @infra/http --filter web dev",
+    "seed:demo": "pnpm --filter @infra/http seed",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint ."
