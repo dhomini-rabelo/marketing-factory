@@ -1,23 +1,18 @@
-import type { ChannelAnalysis, ChannelSummary, Finding } from '@domain/competitor-analysis'
+import type { Serialize } from '@domain/base'
+import type {
+  ChannelAnalysis,
+  ChannelAnalysisProps,
+  ChannelSummary,
+} from '@domain/competitor-analysis'
 import { isPartialChannel } from '@domain/competitor-analysis'
+import type { OverWrite } from '@modules/utils'
 
-export type ChannelAnalysisHttp = {
-  channel: string
-  partial: boolean
-  score: number
-  rationale: string
-  bestContent: { type: string; evidence: string; basis: string }
-  findings: Finding[]
-  collectedAt: string
-}
+export type ChannelAnalysisHttp = OverWrite<
+  Omit<Serialize<ChannelAnalysisProps>, 'projectId'>,
+  { partial: boolean }
+>
 
-export type ChannelSummaryHttp = {
-  channel: string
-  partial: boolean
-  collected: boolean
-  score: number | null
-  collectedAt: string | null
-}
+export type ChannelSummaryHttp = Serialize<ChannelSummary>
 
 export class ChannelAnalysisPresenter {
   static toHttp(analysis: ChannelAnalysis): ChannelAnalysisHttp {

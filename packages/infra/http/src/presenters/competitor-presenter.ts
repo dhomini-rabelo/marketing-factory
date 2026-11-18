@@ -1,18 +1,7 @@
-import type { Competitor } from '@domain/competitor-analysis'
+import type { Serialize, WithID } from '@domain/base'
+import type { Competitor, CompetitorProps } from '@domain/competitor-analysis'
 
-export type CompetitorHttp = {
-  id: string
-  name: string
-  role: string
-  marketFocus: string
-  services: string
-  features: string
-  audience: string
-  rationale: string
-  url: string | null
-  incorrect: boolean
-  qualifiedAt: string
-}
+export type CompetitorHttp = Omit<Serialize<WithID<CompetitorProps>>, 'projectId'>
 
 export class CompetitorPresenter {
   static toHttp(competitor: Competitor): CompetitorHttp {
