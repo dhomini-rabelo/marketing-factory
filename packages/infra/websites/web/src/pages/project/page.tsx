@@ -1,4 +1,5 @@
 import { useParams } from 'react-router'
+import { DocumentsSection } from '@/pages/project/components/documents-section/documents-section'
 import { ProjectBasics } from '@/pages/project/components/project-basics/project-basics'
 import { PromptsPanel } from '@/pages/project/components/prompts-panel/prompts-panel'
 
@@ -10,6 +11,7 @@ export function ProjectPage() {
       <div className="col-span-full">
         <ProjectBasics projectId={projectId} />
       </div>
+      <DocumentsSection projectId={projectId} />
       <div className="sticky top-6 col-start-2 row-start-2">
         <PromptsPanel projectId={projectId} />
       </div>

@@ -16,6 +16,10 @@ function formatTime(date: Date): string {
   return `${padTwoDigits(date.getHours())}:${padTwoDigits(date.getMinutes())}`
 }
 
+export function isToday(isoDate: string, now: Date = new Date()): boolean {
+  return isSameDay(new Date(isoDate), now)
+}
+
 export function formatDate(isoDate: string, now: Date = new Date()): string {
   const date = new Date(isoDate)
   const yesterday = new Date(now)
