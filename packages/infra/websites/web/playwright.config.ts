@@ -20,6 +20,10 @@ export default defineConfig({
     permissions: ['clipboard-read', 'clipboard-write'],
     trace: 'retain-on-failure',
   },
+  projects: [
+    { name: 'empty-database', testMatch: /project\.spec\.ts/ },
+    { name: 'with-projects', testMatch: /(channels|competitors)\.spec\.ts/, dependencies: ['empty-database'] },
+  ],
   webServer: [
     {
       command: 'pnpm --filter @infra/http exec tsx src/server.ts',
