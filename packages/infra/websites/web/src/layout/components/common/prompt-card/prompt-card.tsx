@@ -7,16 +7,13 @@ type PromptCardProps = {
   title: string
   hint: string
   promptText: string
+  copyLabel: string
   variant: 'primary' | 'secondary'
 }
 
 const PREVIEW_CLASSES = 'max-h-24 overflow-hidden [mask-image:linear-gradient(#000_60%,transparent)]'
-const COPY_LABELS = {
-  primary: 'Copiar prompt de coleta',
-  secondary: 'Copiar prompt de leitura',
-}
 
-export function PromptCard({ step, title, hint, promptText, variant }: PromptCardProps) {
+export function PromptCard({ step, title, hint, promptText, copyLabel, variant }: PromptCardProps) {
   const promptRef = useRef<HTMLPreElement>(null)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -39,7 +36,7 @@ export function PromptCard({ step, title, hint, promptText, variant }: PromptCar
       <CopyButton
         textToCopy={promptText}
         selectableRef={promptRef}
-        label={COPY_LABELS[variant]}
+        label={copyLabel}
         variant={variant}
         onCopyFailed={() => setIsExpanded(true)}
       />

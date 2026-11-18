@@ -1,7 +1,7 @@
 import { API_URL } from '@/core/config'
+import { PromptCard } from '@/layout/components/common/prompt-card/prompt-card'
 import { buildCollectionPrompt } from '@/layout/utils/prompts/build-collection-prompt'
 import { buildReadingPrompt } from '@/layout/utils/prompts/build-reading-prompt'
-import { PromptCard } from '@/pages/project/components/prompts-panel/prompt-card'
 
 type PromptsPanelProps = {
   projectId: string
@@ -18,6 +18,7 @@ export function PromptsPanel({ projectId }: PromptsPanelProps) {
         title="Coletar do repositório"
         hint="Cole no Claude Code aberto na pasta do repositório. Ele lê o código e grava os documentos aqui."
         promptText={buildCollectionPrompt(promptInput)}
+        copyLabel="Copiar prompt de coleta"
         variant="primary"
       />
       <div className="flex items-center gap-2 pl-3.5 text-[13px] text-ink-3">
@@ -31,6 +32,7 @@ export function PromptsPanel({ projectId }: PromptsPanelProps) {
         title="Usar no marketing"
         hint="Dê a um agente de marketing com o canal: SEO, Instagram, Facebook, TikTok."
         promptText={buildReadingPrompt(promptInput)}
+        copyLabel="Copiar prompt de leitura"
         variant="secondary"
       />
     </aside>
