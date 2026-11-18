@@ -127,8 +127,7 @@ describe('ChannelPage', () => {
 
     const section = await screen.findByRole('region', { name: 'O que performa melhor' })
 
-    expect(within(section).getByText('Hipótese')).toBeInTheDocument()
-    expect(within(section).getByText('sem número público')).toBeInTheDocument()
+    expect(within(section).getByText('Hipótese: sem número público')).toBeInTheDocument()
   })
 
   it('shows the partial notice only when the channel is partial', async () => {

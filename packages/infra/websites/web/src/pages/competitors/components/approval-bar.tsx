@@ -2,6 +2,8 @@ import { CompetitorApproval } from '@/api/models/competitor'
 import { Button } from '@/layout/components/ui/button'
 import { cn } from '@/layout/utils/styles'
 
+const BLOCKED_REASON_ID = 'approval-blocked-reason'
+
 type ApprovalBarProps = {
   approval: CompetitorApproval
   competitorsCount: number
@@ -62,6 +64,12 @@ function buildDescription({ isApproved, competitorsCount, activeCount, markedCou
   return `Confira os ${competitorsCount} cartões: ${activeLabel} na análise e ${markedLabel} como “Não é concorrente”. Marque o que estiver errado e aprove; só então o prompt da pesquisa inicial é liberado.`
 }
 
+function buildBlockedReason(competitorsCount: number, activeCount: number): string | null {
+  if (competitorsCount === 0) return 'Não há lista de concorrentes para aprovar: copie o prompt 1 para o agente gravar a lista.'
+  if (activeCount === 0) return 'Todos os concorrentes estão marcados como “Não é concorrente”: desfaça ao menos uma marca para aprovar a lista.'
+  return null
+}
+
 export function ApprovalBar({
   approval,
   competitorsCount,
@@ -73,6 +81,7 @@ export function ApprovalBar({
 }: ApprovalBarProps) {
   const isApproved = approval === CompetitorApproval.APPROVED
   const steps = buildSteps(isApproved, competitorsCount)
+  const blockedReason = isApproved ? null : buildBlockedReason(competitorsCount, activeCount)
 
   return (
     <section aria-label="Etapa" className="mt-5 rounded-3 bg-card px-6 py-5 shadow-1">
@@ -109,9 +118,20 @@ export function ApprovalBar({
             Reabrir lista
           </Button>
         ) : (
-          <Button disabled={isPending || activeCount === 0} onClick={onApprove}>
-            Aprovar lista
-          </Button>
+          <div className="grid justify-items-start gap-1.5">
+            <Button
+              disabled={isPending || blockedReason !== null}
+              aria-describedby={blockedReason === null ? undefined : BLOCKED_REASON_ID}
+              onClick={onApprove}
+            >
+              Aprovar lista
+            </Button>
+            {blockedReason !== null && (
+              <p id={BLOCKED_REASON_ID} className="max-w-[300px] text-[12.5px] leading-snug text-attention">
+                {blockedReason}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </section>

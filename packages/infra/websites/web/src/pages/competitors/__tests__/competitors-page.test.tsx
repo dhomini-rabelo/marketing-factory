@@ -79,10 +79,11 @@ describe('CompetitorsPage', () => {
   it('shows the empty message and the first prompt when there is no competitor yet', async () => {
     renderPage({ [listRoute]: { body: buildList([]) } })
 
-    expect(await screen.findByText(/Nenhum concorrente gravado ainda/)).toBeInTheDocument()
+    expect(await screen.findByText(/Nenhum concorrente definido ainda/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Sem lista de concorrentes' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Copiar prompt de concorrentes' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Aprovar lista' })).toBeDisabled()
+    expect(screen.getByText(/Não há lista de concorrentes para aprovar/)).toBeInTheDocument()
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })
 
@@ -214,7 +215,11 @@ describe('CompetitorsPage', () => {
   it('keeps "Aprovar lista" disabled when every competitor is marked', async () => {
     renderPage({ [listRoute]: { body: buildList([markedCompetitor]) } })
 
-    expect(await screen.findByRole('button', { name: 'Aprovar lista' })).toBeDisabled()
+    const approveButton = await screen.findByRole('button', { name: 'Aprovar lista' })
+
+    expect(approveButton).toBeDisabled()
+    expect(approveButton).toHaveAccessibleDescription(/Todos os concorrentes estão marcados como “Não é concorrente”/)
+    expect(screen.getByText(/desfaça ao menos uma marca para aprovar a lista/)).toBeInTheDocument()
   })
 
   it('approves the list, shows it as approved and unlocks the second prompt', async () => {
