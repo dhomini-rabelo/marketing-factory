@@ -14,7 +14,7 @@ export function DocumentItemBody({ projectId, slug }: DocumentItemBodyProps) {
   const { data, isLoading, isError } = documentRequest.state
 
   if (isLoading) return <DocumentItemBodyLoading />
-  if (isError || !data) return <DocumentItemBodyError projectId={projectId} slug={slug} />
+  if (isError || !data) return <DocumentItemBodyError onRetry={() => documentRequest.actions.refetch()} />
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_200px] gap-6 bg-brand-soft px-5 pb-5 pt-1">

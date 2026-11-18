@@ -15,7 +15,7 @@ export function ProjectBasics({ projectId }: ProjectBasicsProps) {
 
   if (isLoading) return <ProjectBasicsLoading />
   if (error instanceof ApiError && error.status === 404) return <ProjectBasicsGone />
-  if (isError || !data) return <ProjectBasicsError projectId={projectId} />
+  if (isError || !data) return <ProjectBasicsError onRetry={() => projectRequest.actions.refetch()} />
 
   return <ProjectBasicsContent key={data.id} project={data} />
 }

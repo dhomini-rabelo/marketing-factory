@@ -9,7 +9,7 @@ export function ProjectListContent() {
   const { data, isLoading, isError } = projectsRequest.state
 
   if (isLoading) return <ProjectListLoading />
-  if (isError) return <ProjectListError />
+  if (isError) return <ProjectListError onRetry={() => projectsRequest.actions.refetch()} />
   if (!data || data.length === 0) return <ProjectListEmpty />
 
   return (

@@ -13,7 +13,7 @@ export function DocumentsSection({ projectId }: DocumentsSectionProps) {
   const { data, isLoading, isError } = documentsRequest.state
 
   if (isLoading) return <DocumentsSectionLoading />
-  if (isError || !data) return <DocumentsSectionError projectId={projectId} />
+  if (isError || !data) return <DocumentsSectionError onRetry={() => documentsRequest.actions.refetch()} />
   if (data.length === 0) return <DocumentsSectionEmpty />
 
   return <DocumentsSectionList projectId={projectId} documents={data} />
