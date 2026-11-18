@@ -38,6 +38,10 @@ Só O1 escreve, quando o gate da Etapa 0 fecha: depois da rodada de reconhecimen
 respostas do usuário, antes da rodada 1. Ninguém reescreve depois — o que muda no meio do
 caminho é premissa nova, e premissa nova vive no handoff.
 
+A exceção é o pedido novo que o usuário manda depois de um `bloco: fim`. Ele não abre run nova:
+o orquestrador da vez acrescenta ao final uma seção `## Pedido {k}`, com a fala verbatim e a
+definição de pronto, e não mexe no que veio antes.
+
 Ele existe porque a descrição do usuário chega uma vez, no prompt de O1, e nunca mais. Sem esse
 arquivo, O2 herda uma task sem enunciado.
 
@@ -240,7 +244,8 @@ evitar.
 O primeiro O1 da sessão cria, com a data e o slug da run dele: nas runs seguintes o nome do
 arquivo continua sendo esse, e não o da run da vez. Todo orquestrador da sessão lê e acrescenta,
 em qualquer run. Nenhuma linha some. É o único arquivo que atravessa runs: o nível 0 passa o
-caminho a cada O1 novo, e o resto da cadeia o encontra pelo briefing e pelo handoff.
+caminho a um O1 novo (que só nasce quando o orquestrador da vez não responde mais), e o resto da
+cadeia o encontra pelo briefing e pelo handoff.
 
 ```md
 # Memória da sessão

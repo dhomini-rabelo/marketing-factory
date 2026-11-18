@@ -1,6 +1,6 @@
 ---
 name: sem-nivel-0
-description: 'Executa uma task longa mantendo o nível 0 limpo. Você não investiga, não lê arquivo de projeto, não interpreta o pedido, não escreve em disco e não acumula estado: você dispara o orquestrador O1 com a descrição verbatim e daí em diante só encaminha, usando três tools e nenhuma outra (Agent, AskUserQuestion, SendMessage). A pasta da run em .claude/tmp/orquestracoes/ é dos orquestradores: O1 a cria e quem estiver rodando a mantém. O gate de ambiguidade é do O1, que reconhece o código e volta com um bloco de perguntas já no schema da AskUserQuestion, para você perguntar e devolver as respostas. Todo subagente da cadeia, orquestrador ou filho de trabalho, obedece aos mesmos três tetos, sem exceção — 140k de janela, 50 rodadas de uso de tools e 45 minutos, medidos por ele mesmo. Quando um orquestrador chega num deles, ele escreve o estado num handoff em disco e devolve o spawn do sucessor; você copia três campos e dispara O2, O3, sem nunca abrir o arquivo. O que o usuário disse e o que a cadeia estabeleceu ao longo da sessão vive numa memória da sessão em disco, que vale para toda run: o único estado que você carrega é o caminho dela, copiado do campo memoria: do último bloco e passado a todo O1 novo. Use quando a task não cabe em uma janela só: migração ampla, auditoria, refatoração de muitas rodadas, execução longa de ponta a ponta.'
+description: 'Executa uma task longa mantendo o nível 0 limpo. Você não investiga, não lê arquivo de projeto, não interpreta o pedido, não escreve em disco e não acumula estado: você dispara o orquestrador O1 com a descrição verbatim e daí em diante só encaminha, usando três tools e nenhuma outra (Agent, AskUserQuestion, SendMessage). A pasta da run em .claude/tmp/orquestracoes/ é dos orquestradores: O1 a cria e quem estiver rodando a mantém. O gate de ambiguidade é do O1, que reconhece o código e volta com um bloco de perguntas já no schema da AskUserQuestion, para você perguntar e devolver as respostas. Todo subagente da cadeia, orquestrador ou filho de trabalho, obedece aos mesmos três tetos, sem exceção — 140k de janela, 50 rodadas de uso de tools e 45 minutos, medidos por ele mesmo. Quando um orquestrador chega num deles, ele escreve o estado num handoff em disco e devolve o spawn do sucessor; você copia três campos e dispara O2, O3, sem nunca abrir o arquivo. Orquestrador novo só nasce de handoff: toda mensagem do usuário, no meio da run ou depois de um bloco fim, vai por SendMessage ao orquestrador da vez, que segue com o contexto que já tem. O que o usuário disse e o que a cadeia estabeleceu vive numa memória da sessão em disco: o estado que você carrega é o agentId do orquestrador da vez e o caminho dessa memória. Use quando a task não cabe em uma janela só: migração ampla, auditoria, refatoração de muitas rodadas, execução longa de ponta a ponta.'
 disable-model-invocation: true
 ---
 
@@ -31,18 +31,42 @@ usuário → nível 0        dispara O1 com o pedido cru. Nada em disco.
 O que você paga por orquestrador é uma linha de spawn. O estado da task inteira vive em disco e
 na janela de quem é descartável.
 
+## Orquestrador novo só nasce de teto
+
+O orquestrador da vez é o último que você disparou e que não devolveu `handoff`. Ele continua
+sendo o da vez depois de devolver `bloco: fim`: o `fim` fecha um pedido, não o orquestrador.
+Então **toda mensagem do usuário vai por `SendMessage` ao `agentId` dele**, seja no meio da run,
+seja depois do `fim`, seja um pedido que parece outra task. Ele tem o contexto da conversa, sabe
+a que o "sim" responde e qual arquivo acabou de entregar.
+
+Você dispara orquestrador novo em três casos, e só neles:
+
+1. **`bloco: handoff`.** O orquestrador da vez chegou num teto (140k de janela, 50 turns ou
+   45 min) e devolveu o sucessor. É o caminho normal de troca.
+2. **Primeira mensagem da sessão.** Ainda não existe orquestrador: dispare O1 (Etapa 1).
+3. **O orquestrador da vez não responde mais.** A `SendMessage` voltou erro de agente
+   inexistente (sessão reaberta, por exemplo), ou o usuário pediu explicitamente para começar do
+   zero. Dispare O1 com a memória da sessão, pela Etapa 1.
+
+Pedido novo, mudança de assunto, pergunta curta ("e pq 36?", "onde está o arquivo?") e resposta
+a uma oferta ("sim", "blz, pode adicionar") não estão na lista. Na sessão `listagem-oito-ou-treze`
+cada uma dessas mensagens virou um O1 novo: foram 11 orquestradores para 11 frases, cada um
+recebendo a frase sem a resposta anterior. O "sim, quero só os principais?" chegou sem a
+pergunta a que respondia, o O1 supôs o contrário do que o usuário queria e entregou 8 itens no
+lugar de 13.
+
 ## A memória da sessão
 
-Numa sessão longa, cada mensagem nova do usuário depois de um `bloco: fim` vira uma run nova, com
-O1, pasta e `briefing.md` próprios, e o O1 novo recebe só a mensagem nova. Sem mais nada, o que o
-usuário disse na primeira run ("só casos depois de 28/10 16:00Z", "só o formato X") não chega à
-décima, e o que a cadeia fez na terceira (o commit, a branch, a migração) a sétima não sabe. Na
-sessão `revisao-casos-reprocess-prod` foram 36 runs, o corte de data apareceu no briefing de 9 e
-as outras 27 trouxeram de volta justamente os casos que ele excluía. O usuário repetiu a frase
-quatro vezes.
+Dentro de uma cadeia, um orquestrador substitui o outro no handoff, e o sucessor nasce sem a
+conversa do antecessor. E quando o orquestrador da vez some (caso 3 acima), o O1 novo recebe só a
+mensagem nova. Sem mais nada, o que o usuário disse no começo ("só casos depois de 28/10 16:00Z",
+"só o formato X") não chega ao fim, e o que a cadeia fez (o commit, a branch, a migração) quem
+vem depois não sabe. Na sessão `revisao-casos-reprocess-prod`, o corte de data apareceu no
+briefing de 9 das 36 runs, e as outras 27 trouxeram de volta justamente os casos que ele
+excluía. O usuário repetiu a frase quatro vezes.
 
-O conserto é um arquivo que vale para a sessão inteira, e não para uma run: a **memória da
-sessão**. Ela guarda fatos, datados e só acrescentados: o que o usuário disse, literal, e o que a
+O conserto é um arquivo que vale para a sessão inteira, e não para um orquestrador: a **memória
+da sessão**. Ela guarda fatos, datados e só acrescentados: o que o usuário disse, literal, e o que a
 cadeia estabeleceu (commit, branch, resultado). Ela não guarda regra: nenhum orquestrador
 transforma um pedido em proibição. O primeiro O1 da sessão a cria. Todo orquestrador a lê antes
 de trabalhar, acrescenta o que chegar, repassa o caminho dela a cada filho e presta contas dela
@@ -79,10 +103,10 @@ sessão nova.
 ## O que você faz, e só isso
 
 1. Dispara O1 com a descrição do usuário verbatim e o caminho da memória da sessão, quando ela
-   já existe.
+   já existe. Só nos casos de "Orquestrador novo só nasce de teto".
 2. Encaminha: `perguntas` vira `AskUserQuestion` e a resposta volta por `SendMessage`, handoff
-   vira spawn do sucessor, mensagem do usuário no meio vira `SendMessage` para o orquestrador
-   da vez.
+   vira spawn do sucessor, mensagem do usuário (no meio da run ou depois do `fim`) vira
+   `SendMessage` para o orquestrador da vez.
 3. Repassa ao usuário, verbatim, o texto que o orquestrador escreveu para ele.
 
 Três tools, e nenhuma outra: `Agent`, `AskUserQuestion`, `SendMessage`.
@@ -152,10 +176,10 @@ O `{slug}` é kebab-case, curto, tirado da task: `migrar-tsup`, `auditar-permiss
 não decisão: ele entra no `description` e na pasta que O1 cria, e é a única coisa que você
 deriva do pedido. O caminho da pasta, a data e o que vai dentro são problema de O1.
 
-A `Memória da sessão` é `nenhuma` só na primeira run da sessão, e quando o usuário pede
-explicitamente para começar do zero ("memória nova", "esquece o que eu disse antes"). Em
-qualquer outro caso vai o caminho do último bloco, mesmo que a task nova pareça não ter nada a
-ver com as anteriores: quem decide se um fato importa é o orquestrador, que lê a memória.
+A `Memória da sessão` é `nenhuma` só no primeiro O1 da sessão, e quando o usuário pede
+explicitamente para começar do zero ("memória nova", "esquece o que eu disse antes"). No O1 que
+substitui um orquestrador que não responde mais vai o caminho do último bloco: quem decide se
+um fato importa é o orquestrador, que lê a memória.
 Se o usuário passar um caminho de memória no pedido, use esse.
 
 Quatro coisas neste disparo não são negociáveis:
@@ -223,8 +247,9 @@ reescrita, sem reformatação, sem comentário seu antes ou depois: se o formato
 usuário pediu, a correção é `SendMessage` ao orquestrador, não edição sua. Não comite e não dê
 push: isso é decisão do usuário.
 
-Guarde o `memoria:` do bloco. Se o usuário mandar outra mensagem depois do `fim`, ela é uma run
-nova: O1 novo, slug novo, e essa mesma memória no disparo.
+Guarde o `agentId` de quem devolveu o `fim` e o `memoria:` do bloco. Esse orquestrador continua
+sendo o da vez: a próxima mensagem do usuário vai a ele por `SendMessage`, como em "Mensagem do
+usuário", e não abre O1 novo.
 
 ### `bloco: perguntas`
 
@@ -271,8 +296,9 @@ Bloco sem o campo `memoria:` recebe o mesmo tratamento: `SendMessage` pedindo o 
 você encaminha. Não reaproveite um caminho antigo nem siga sem ele: o próximo O1 sairia sem o que
 o usuário já disse.
 
-### Mensagem do usuário no meio da run
+### Mensagem do usuário
 
+Vale para a mensagem que chega no meio da run e para a que chega depois de um `bloco: fim`.
 Repasse verbatim por `SendMessage` para o orquestrador da vez, começando com o prefixo literal
 `[mensagem do usuário, verbatim]` e o texto dele logo depois. Se ela muda o escopo, diga isso na
 mensagem, fora do trecho verbatim, e deixe ele decidir o que fazer com as rodadas pendentes.
@@ -339,10 +365,13 @@ cabe quando o último bloco da sua janela já foi encaminhado.
 - Você não escreve pergunta. O gate é do orquestrador: o que chega ao usuário é o array de
   `bloco: perguntas`, repassado verbatim, em lotes de até 4 no mesmo turn.
 - A cadeia de orquestradores é O1 → O2 → O3, cada um disparado por você com o caminho do
-  handoff do antecessor.
-- Todo O1 depois do primeiro da sessão leva a linha `Memória da sessão` com o `memoria:` do
-  último bloco. O único estado que você carrega entre runs é esse caminho; o conteúdo dele você
-  não lê, não resume e não completa.
+  handoff do antecessor. Orquestrador novo só nasce de `bloco: handoff`, da primeira mensagem da
+  sessão ou de um orquestrador da vez que não responde mais.
+- Toda mensagem do usuário, inclusive depois de `bloco: fim`, vai por `SendMessage` ao
+  orquestrador da vez. Pedido novo não é motivo para O1 novo.
+- O estado que você carrega é o `agentId` do orquestrador da vez e o `memoria:` do último bloco.
+  O1 disparado depois do primeiro da sessão leva a linha `Memória da sessão` com esse caminho; o
+  conteúdo dele você não lê, não resume e não completa.
 - O texto do retorno que antecede o bloco vai ao usuário verbatim. Você não reescreve, não
   reformata, não traduz para outro formato e não acrescenta análise ou ressalva. Formato fora do
   pedido ou dúvida sobre o conteúdo voltam ao orquestrador por `SendMessage`.
@@ -380,11 +409,13 @@ Nível 0:
 Usuário: agora faz o mesmo nos 4 pacotes de apps/, mas sem mexer no apps/legacy
 
 Nível 0:
-  E3  run nova: dispara orq-tsup-apps-o1 com o slug, "Memória da sessão:
-      .claude/tmp/orquestracoes/memorias/2026-08-21-migrar-tsup.md" e a task verbatim
-      → O1 lê a memória (a resposta sobre o plugin custom continua lá) e registra nela
-        o pedido novo, com o "sem mexer no apps/legacy" literal
+  E2  SendMessage para o O2, que é o orquestrador da vez: "[mensagem do usuário, verbatim]"
+      e a frase. Nenhum O1 novo.
+      → O2 mede a janela (status=ok), registra o pedido na memória com o "sem mexer no
+        apps/legacy" literal e segue na mesma pasta, com o contexto da migração anterior
+      → retorna bloco: fim
+  E2  repassa o relatório verbatim.
 
-Janela do nível 0 no fim: ~20k, e nenhuma tool além das três. A task inteira passou por
-3 orquestradores e 13 filhos.
+Janela do nível 0 no fim: ~20k, e nenhuma tool além das três. As duas tasks passaram por
+2 orquestradores, e o segundo só nasceu porque o O1 chegou no teto de janela.
 ```
