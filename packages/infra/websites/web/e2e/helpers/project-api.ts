@@ -1,5 +1,6 @@
 import { expect, type APIRequestContext } from '@playwright/test'
 import { uniqueName } from '@e2e/helpers/unique-name'
+import { saveSeoRound } from '../../../../http/scripts/seed-demo-seo'
 
 export const API_URL = 'http://127.0.0.1:7341'
 
@@ -121,4 +122,15 @@ export async function saveCompetitorsViaApi(
   })
   expect([HTTP_OK, HTTP_CREATED]).toContain(response.status())
   return { wasCreated: response.status() === HTTP_CREATED }
+}
+
+export async function approveCompetitorsViaApi(request: APIRequestContext, projectId: string): Promise<void> {
+  const response = await request.put(`${API_URL}/projects/${projectId}/competitors-approval`, {
+    data: { approved: true },
+  })
+  expect(response.status()).toBe(HTTP_OK)
+}
+
+export async function saveSeoRoundViaApi(projectId: string): Promise<void> {
+  await saveSeoRound(API_URL, projectId, 'complete')
 }

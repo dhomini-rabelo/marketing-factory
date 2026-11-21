@@ -22,7 +22,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'empty-database', testMatch: /project\.spec\.ts/ },
-    { name: 'with-projects', testMatch: /(channels|competitors)\.spec\.ts/, dependencies: ['empty-database'] },
+    { name: 'with-projects', testMatch: /(channels|competitors|seo)\.spec\.ts/, dependencies: ['empty-database'] },
   ],
   webServer: [
     {

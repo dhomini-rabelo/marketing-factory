@@ -10,7 +10,7 @@ import {
 } from '@e2e/helpers/project-api'
 import { chooseProjectInSelect, returnToWindow } from '@e2e/helpers/window'
 
-const CHANNEL_LINK_SELECTOR = 'a[href*="/channels/"]'
+const CHANNEL_LINK_SELECTOR = 'a[href*="/channels/"]:not([href$="/channels/seo"])'
 const PROJECT_URL_PATTERN = /\/projects\/[\w-]+$/
 const ASPECT_BLOCKS: { key: ChannelFindingInput['aspect']; label: string }[] = [
   { key: 'format', label: 'Formato' },
@@ -54,24 +54,25 @@ function channelHref(projectId: string, channel: string): string {
 
 test.describe.configure({ mode: 'serial' })
 
-test('mostra os nove canais sem coleta na ordem e com as chaves da API', async ({ page, request }) => {
+test('mostra os oito canais sem coleta na ordem e com as chaves da API', async ({ page, request }) => {
   const project = await createProjectViaApi(request)
   const apiChannels = await listChannelsViaApi(request, project.id)
 
   await page.goto(`/projects/${project.id}`)
   const sidebar = page.getByRole('complementary')
   await expect(sidebar.getByRole('heading', { name: 'Pesquisa inicial' })).toBeVisible()
-  await expect(sidebar.locator(CHANNEL_LINK_SELECTOR)).toHaveCount(9)
+  await expect(sidebar.locator(CHANNEL_LINK_SELECTOR)).toHaveCount(8)
 
-  expect(apiChannels).toHaveLength(9)
+  expect(apiChannels).toHaveLength(8)
   expect(apiChannels.every((summary) => !summary.collected && summary.score === null)).toBe(true)
   expect(await sidebarChannelHrefs(page)).toEqual(apiChannels.map((summary) => channelHref(project.id, summary.channel)))
-  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(9)
+  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(8)
   await expect(sidebar.getByText('parcial sem login', { exact: true })).toHaveCount(4)
 
   await sidebar.getByRole('link', { name: /SEO e blog/ }).click()
+  await expect(page).toHaveURL(channelHref(project.id, 'seo'))
   await expect(page.getByRole('heading', { name: 'SEO e blog', level: 1 })).toBeVisible()
-  await expect(page.getByText('Este canal ainda não foi coletado.')).toBeVisible()
+  await expect(page.getByText('Nenhuma rodada de SEO gravada ainda.')).toBeVisible()
 })
 
 test('grava cinco canais pela API e mostra a barra por nota, com a marca parcial e o canal aberto', async ({
@@ -85,7 +86,7 @@ test('grava cinco canais pela API e mostra a barra por nota, com a marca parcial
   ])
   const scores: [string, number][] = [
     ['youtube', 5],
-    ['seo', 9],
+    ['ads', 9],
     ['reddit', 3],
     ['x', 8],
     ['linkedin', 7],
@@ -93,27 +94,27 @@ test('grava cinco canais pela API e mostra a barra por nota, com a marca parcial
 
   await page.goto(`/projects/${project.id}`)
   const sidebar = page.getByRole('complementary')
-  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(9)
+  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(8)
   for (const [channel, score] of scores) {
     await saveChannelViaApi(request, project.id, channel, buildAnalysis({ score, rationale: `Motivo da nota ${score}` }))
   }
   await returnToWindow(page)
 
   const apiChannels = await listChannelsViaApi(request, project.id)
-  const expectedKeys = ['seo', 'x', 'linkedin', 'youtube', 'reddit', 'site-pricing', 'instagram', 'tiktok', 'ads']
+  const expectedKeys = ['ads', 'x', 'linkedin', 'youtube', 'reddit', 'site-pricing', 'instagram', 'tiktok']
   await expect.poll(() => sidebarChannelHrefs(page)).toEqual(expectedKeys.map((key) => channelHref(project.id, key)))
   expect(apiChannels.map((summary) => summary.channel)).toEqual(expectedKeys)
 
-  await expect(sidebar.getByRole('link', { name: /9\s*SEO e blog/ })).toBeVisible()
+  await expect(sidebar.getByRole('link', { name: /9\s*Anúncios/ })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: /8\s*X\s*parcial sem login/ })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: /3\s*Reddit\s*parcial sem login/ })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: /TikTok\s*parcial sem login\s*sem coleta/ })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: /Instagram\s*sem coleta/ })).toBeVisible()
-  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(4)
+  await expect(sidebar.getByText('sem coleta', { exact: true })).toHaveCount(3)
 
-  await sidebar.getByRole('link', { name: /9\s*SEO e blog/ }).click()
-  await expect(page).toHaveURL(channelHref(project.id, 'seo'))
-  await expect(page.getByRole('heading', { name: 'SEO e blog', level: 1 })).toBeVisible()
+  await sidebar.getByRole('link', { name: /9\s*Anúncios/ }).click()
+  await expect(page).toHaveURL(channelHref(project.id, 'ads'))
+  await expect(page.getByRole('heading', { name: 'Anúncios', level: 1 })).toBeVisible()
   await expect(page.getByLabel('Nota 9 de 10')).toBeVisible()
   await expect(page.getByText('Motivo da nota 9')).toBeVisible()
   await expect(page.getByRole('region', { name: 'O que performa melhor' })).toContainText('Vídeo curto')
@@ -147,10 +148,10 @@ test('grava um achado por aspecto pela API e mostra os cinco blocos na ordem fix
     kind: 'hypothesis' as const,
     statement: `Achado de ${label}`,
   }))
-  await saveChannelViaApi(request, project.id, 'seo', buildAnalysis({ findings: [...findings].reverse() }))
+  await saveChannelViaApi(request, project.id, 'ads', buildAnalysis({ findings: [...findings].reverse() }))
 
-  await page.goto(channelHref(project.id, 'seo'))
-  await expect(page.getByRole('heading', { name: 'SEO e blog', level: 1 })).toBeVisible()
+  await page.goto(channelHref(project.id, 'ads'))
+  await expect(page.getByRole('heading', { name: 'Anúncios', level: 1 })).toBeVisible()
 
   await expect(page.getByRole('heading', { level: 3 })).toHaveText(ASPECT_BLOCKS.map(({ label }) => label))
   for (const { label } of ASPECT_BLOCKS) {
@@ -166,7 +167,7 @@ test('os prompts copiados trazem as chaves de canal, de aspecto e de papel que a
   const competitors: CompetitorInput[] = ROLE_KEYS.map((role) => ({ name: `Concorrente ${role}`, role }))
   await saveCompetitorsViaApi(request, project.id, competitors)
   const channelKeys = (await listChannelsViaApi(request, project.id)).map((summary) => summary.channel)
-  expect(channelKeys).toHaveLength(9)
+  expect(channelKeys).toHaveLength(8)
   for (const [index, { key }] of ASPECT_BLOCKS.entries()) {
     const channel = channelKeys[index]
     const finding: ChannelFindingInput = {
@@ -236,14 +237,14 @@ test('troca de projeto pelo select, abre a página do projeto e mostra só os ca
 }) => {
   const first = await createProjectViaApi(request)
   const second = await createProjectViaApi(request)
-  await saveChannelViaApi(request, first.id, 'seo', buildAnalysis({ score: 9 }))
+  await saveChannelViaApi(request, first.id, 'ads', buildAnalysis({ score: 9 }))
   await saveChannelViaApi(request, second.id, 'youtube', buildAnalysis({ score: 6 }))
   await saveChannelViaApi(request, second.id, 'linkedin', buildAnalysis({ score: 2 }))
 
-  await page.goto(channelHref(first.id, 'seo'))
+  await page.goto(channelHref(first.id, 'ads'))
   const sidebar = page.getByRole('complementary')
   await expect(page.getByLabel('Nota 9 de 10')).toBeVisible()
-  await expect(sidebar.getByRole('link', { name: /9\s*SEO e blog/ })).toBeVisible()
+  await expect(sidebar.getByRole('link', { name: /9\s*Anúncios/ })).toBeVisible()
 
   await chooseProjectInSelect(page, second.name)
   await expect(page).toHaveURL(PROJECT_URL_PATTERN)
@@ -253,7 +254,7 @@ test('troca de projeto pelo select, abre a página do projeto e mostra só os ca
 
   await expect(sidebar.getByRole('link', { name: /6\s*YouTube/ })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: /2\s*LinkedIn/ })).toBeVisible()
-  await expect(sidebar.getByRole('link', { name: /9\s*SEO e blog/ })).toHaveCount(0)
+  await expect(sidebar.getByRole('link', { name: /9\s*Anúncios/ })).toHaveCount(0)
   await expect.poll(() => sidebarChannelHrefs(page).then((hrefs) => hrefs.slice(0, 2))).toEqual([
     channelHref(second.id, 'youtube'),
     channelHref(second.id, 'linkedin'),
@@ -261,6 +262,6 @@ test('troca de projeto pelo select, abre a página do projeto e mostra só os ca
 
   await chooseProjectInSelect(page, first.name)
   await expect(page).toHaveURL(`/projects/${first.id}`)
-  await expect(sidebar.getByRole('link', { name: /9\s*SEO e blog/ })).toBeVisible()
+  await expect(sidebar.getByRole('link', { name: /9\s*Anúncios/ })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: /6\s*YouTube/ })).toHaveCount(0)
 })
