@@ -1,4 +1,5 @@
 import type { SeoRoundCompetitor } from '@/api/models/seo'
+import { ComparisonsOverview } from '@/pages/seo/components/overview/comparisons-overview'
 import { EffortTable } from '@/pages/seo/components/overview/effort-table'
 import { OverviewSection } from '@/pages/seo/components/overview/overview-section'
 import { PageTypesTable } from '@/pages/seo/components/overview/page-types-table'
@@ -24,6 +25,7 @@ export function SeoOverview({ competitors }: SeoOverviewProps) {
         <PageTypesTable competitors={collectedCompetitors} />
       </OverviewSection>
       <PaidToolsStrip />
+      <ComparisonsOverview competitors={collectedCompetitors} />
     </div>
   )
 }
