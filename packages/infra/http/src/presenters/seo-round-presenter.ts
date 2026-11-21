@@ -43,7 +43,7 @@ export type SeoRoundSummaryHttp = {
 
 export type SeoCompetitorHttp = SeoCompetitorPayload & {
   name: string
-  documents: (SeoRoundDocumentView & { body: string })[]
+  documents: SeoRoundDocumentView[]
 }
 
 export class SeoRoundPresenter {

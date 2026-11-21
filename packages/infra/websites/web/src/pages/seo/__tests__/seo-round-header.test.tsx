@@ -35,8 +35,8 @@ function buildRound(overrides: Partial<SeoRound> = {}): SeoRound {
       { name: 'Principal', role: CompetitorRole.MAIN, collected: true, pagesRead: 43, profile: {}, comparisons: [], clusters: [] },
     ],
     documents: [
-      { title: 'A', fileName: 'a.md', about: 'a', size: 10 },
-      { title: 'B', fileName: 'b.md', about: 'b', size: 20 },
+      { title: 'A', fileName: 'a.md', about: 'a', size: 10, body: 'Corpo A' },
+      { title: 'B', fileName: 'b.md', about: 'b', size: 20, body: 'Corpo B' },
     ],
     ...overrides,
   }

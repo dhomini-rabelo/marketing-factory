@@ -45,6 +45,7 @@ export type SeoRoundDocument = {
   fileName: string
   about: string
   size: number
+  body: string
 }
 
 export type SeoRound = {
@@ -62,8 +63,6 @@ export type SeoRound = {
   documents: SeoRoundDocument[]
 }
 
-export type SeoCompetitorDocument = SeoRoundDocument & { body: string }
-
 export type SeoCompetitor = {
   name: string
   profile: Record<string, unknown>
@@ -74,5 +73,5 @@ export type SeoCompetitor = {
   folders: object[]
   items: object[]
   audiences: object[]
-  documents: SeoCompetitorDocument[]
+  documents: SeoRoundDocument[]
 }

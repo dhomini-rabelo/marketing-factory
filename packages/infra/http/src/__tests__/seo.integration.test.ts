@@ -468,7 +468,7 @@ describe('seo routes', () => {
     expect(first.status).toBe(201)
     expect(second.status).toBe(409)
     expect(second.body.error.code).toBe('SEO_DOCUMENT_ALREADY_SAVED')
-    expect(read.body.documents).toEqual([{ title: 'T', fileName: 'a.md', about: 'About', size: 4 }])
+    expect(read.body.documents).toEqual([{ title: 'T', fileName: 'a.md', about: 'About', size: 4, body: 'Body' }])
   })
 
   it('refuses a round opened with an invalid tool or date', async () => {

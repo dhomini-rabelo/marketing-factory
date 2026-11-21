@@ -39,6 +39,7 @@ export type SeoRoundDocumentView = {
   fileName: string
   about: string
   size: number
+  body: string
 }
 
 type Response = {
@@ -108,6 +109,7 @@ export class GetSeoRoundUseCase implements UseCase<Payload, Response> {
         fileName: document.props.fileName,
         about: document.props.about,
         size: document.props.size,
+        body: document.props.body,
       })),
     }
   }

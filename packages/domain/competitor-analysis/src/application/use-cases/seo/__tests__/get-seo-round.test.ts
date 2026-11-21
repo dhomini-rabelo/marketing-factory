@@ -184,7 +184,7 @@ describe('GetSeoRoundUseCase', () => {
     expect(response.competitors[0].collected).toBe(true)
   })
 
-  it('returns the documents without body and without round id', async () => {
+  it('returns the documents with the whole body and without other rounds', async () => {
     seoRoundRepository.documents.push(
       makeSeoRoundDocument({ roundId: round.id, title: 'Doc', fileName: 'doc.md', about: 'About', body: 'abc' }),
       makeSeoRoundDocument({ roundId: createID() }),
@@ -196,7 +196,7 @@ describe('GetSeoRoundUseCase', () => {
     })
 
     expect(response.documents).toEqual([
-      { title: 'Doc', fileName: 'doc.md', about: 'About', size: 3 },
+      { title: 'Doc', fileName: 'doc.md', about: 'About', size: 3, body: 'abc' },
     ])
   })
 

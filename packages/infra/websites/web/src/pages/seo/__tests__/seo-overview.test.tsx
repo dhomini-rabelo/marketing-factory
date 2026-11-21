@@ -190,7 +190,7 @@ const callyWithDetails: SeoRoundCompetitor = {
 }
 
 const documents = [
-  { title: 'Como cada um monta a página', fileName: 'seo-comparacoes.md', about: 'Estrutura das páginas de comparação.', size: 2048 },
+  { title: 'Como cada um monta a página', fileName: 'seo-comparacoes.md', about: 'Estrutura das páginas de comparação.', size: 2048, body: '# Comparações\n\nCada página compara dois produtos lado a lado.' },
 ]
 
 const searches = [
@@ -255,6 +255,20 @@ describe('SeoOverview temas, leitura, posição e documentos', () => {
     expect(section.getByText('Como cada um monta a página')).toBeInTheDocument()
     expect(section.getByText('seo-comparacoes.md · 2,0 KB')).toBeInTheDocument()
     expect(section.getByText('Estrutura das páginas de comparação.')).toBeInTheDocument()
+  })
+
+  it('opens a round document with its whole text on the screen', async () => {
+    const user = userEvent.setup()
+    renderOverview([cally], { documents })
+
+    const section = await findSection('Documentos anexados à rodada')
+    const body = section.getByText(/Cada página compara dois produtos lado a lado\./)
+    expect(body).not.toBeVisible()
+
+    await user.click(section.getByText('Como cada um monta a página'))
+
+    expect(body).toBeVisible()
+    expect(body.textContent).toBe(documents[0].body)
   })
 
   it('says no document was attached when the round has none', async () => {
