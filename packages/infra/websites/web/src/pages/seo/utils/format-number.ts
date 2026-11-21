@@ -11,3 +11,9 @@ export function formatDecimal(value: number): string {
 export function formatDayMonth(isoDate: string): string {
   return isoDate.split('-').reverse().slice(0, 2).join('/')
 }
+
+const BYTES_PER_KILOBYTE = 1024
+
+export function formatKilobytes(bytes: number): string {
+  return `${formatDecimal(bytes / BYTES_PER_KILOBYTE)} KB`
+}

@@ -41,7 +41,7 @@ function buildCompetitor(name: string, numbers: Record<string, number | null>, r
   }
 }
 
-function buildRound(competitors: SeoRoundCompetitor[]): SeoRound {
+function buildRound(competitors: SeoRoundCompetitor[], overrides: Partial<SeoRound> = {}): SeoRound {
   return {
     id: 'r1',
     tool: SeoTool.CLAUDE_CODE,
@@ -55,13 +55,14 @@ function buildRound(competitors: SeoRoundCompetitor[]): SeoRound {
     pagesRead: 30,
     competitors,
     documents: [],
+    ...overrides,
   }
 }
 
-function renderOverview(competitors: SeoRoundCompetitor[]) {
+function renderOverview(competitors: SeoRoundCompetitor[], overrides: Partial<SeoRound> = {}) {
   mockApi({
     [`GET ${API_ROUTES.seo.rounds(PROJECT_ID)}`]: { body: { rounds: [summary] } },
-    [`GET ${API_ROUTES.seo.round(PROJECT_ID, 'latest')}`]: { body: buildRound(competitors) },
+    [`GET ${API_ROUTES.seo.round(PROJECT_ID, 'latest')}`]: { body: buildRound(competitors, overrides) },
   })
   return renderWithProviders(<SeoPage />, {
     initialEntry: `/projects/${PROJECT_ID}/channels/seo`,
@@ -166,5 +167,124 @@ describe('SeoOverview comparativo', () => {
     const pageTypesTable = screen.getAllByRole('table')[1]
     const callyRow = pageTypesTable.querySelector('tr[data-competitor="Cally"]') as HTMLElement
     expect(within(callyRow).getAllByText('0').length).toBeGreaterThan(0)
+  })
+})
+
+function buildTopic(index: number, pages: number) {
+  return {
+    numbers: { pages },
+    texts: { theme: `Tema ${index}`, term: `termo-${index}`, exampleUrl: `https://www.cally.com/blog/exemplo-${index}` },
+  }
+}
+
+const callyWithDetails: SeoRoundCompetitor = {
+  ...cally,
+  profile: {
+    ...(cally.profile as object),
+    texts: {
+      ...(cally.profile as { texts: object }).texts,
+      dominantTopics: 'Agendamento, produtividade e reuniões.',
+    },
+  },
+  clusters: Array.from({ length: 10 }, (_, index) => buildTopic(index + 1, 10 + index)),
+}
+
+const documents = [
+  { title: 'Como cada um monta a página', fileName: 'seo-comparacoes.md', about: 'Estrutura das páginas de comparação.', size: 2048 },
+]
+
+const searches = [
+  {
+    texts: { query: 'agenda online', market: 'Brasil', searchedAt: '2026-11-20', searchTool: 'google' },
+    results: [{ position: 1, competitor: 'Cally' }, { position: 2, domain: 'outro.com' }],
+  },
+]
+
+async function findSection(title: string) {
+  const heading = await screen.findByRole('heading', { name: title })
+  return within(heading.closest('section') as HTMLElement)
+}
+
+describe('SeoOverview temas, leitura, posição e documentos', () => {
+  it('shows up to 8 topics per competitor ordered by pages with an example link', async () => {
+    renderOverview([callyWithDetails, fireflies])
+
+    const section = await findSection('Temas do blog')
+    const items = section.getAllByRole('listitem')
+    expect(items).toHaveLength(8)
+    expect(items[0]).toHaveTextContent('Tema 10')
+    expect(items[0]).toHaveTextContent('19')
+    expect(within(items[0]).getByRole('link', { name: 'exemplo' })).toHaveAttribute('href', 'https://www.cally.com/blog/exemplo-10')
+    expect(section.getByText('2 temas a mais na aba dele')).toBeInTheDocument()
+    expect(section.getByText(/Sem temas contados/)).toBeInTheDocument()
+  })
+
+  it('shows the reading and the collection limits of each competitor', async () => {
+    renderOverview([callyWithDetails, fireflies])
+
+    const section = await findSection('Leitura do agente')
+    expect(section.getByText('Agendamento, produtividade e reuniões.')).toBeInTheDocument()
+    expect(section.getAllByText('Limites da coleta.')).toHaveLength(2)
+    expect(section.getAllByText('não medido')).toHaveLength(1)
+  })
+
+  it('shows the Google sample with the low confidence seal and the collection date', async () => {
+    renderOverview([cally], { searches })
+
+    const section = await findSection('Amostra de posição no Google')
+    expect(section.getByText(/baixa confiança/)).toBeInTheDocument()
+    expect(section.getByText(/21\/11\/2026/)).toBeInTheDocument()
+    expect(section.getByText('agenda online')).toBeInTheDocument()
+    expect(section.getByText('20/11/2026')).toBeInTheDocument()
+    expect(section.getByText('1. Cally · 2. outro.com')).toBeInTheDocument()
+  })
+
+  it('says the tool gave no reliable search instead of an empty table', async () => {
+    renderOverview([cally], { searches: [], note: 'Coleta feita. A ferramenta não deu busca confiável.' })
+
+    const section = await findSection('Amostra de posição no Google')
+    expect(section.getByText('Posição no Google não coletada nesta rodada')).toBeInTheDocument()
+    expect(section.getByText(/A ferramenta não deu busca confiável\./)).toBeInTheDocument()
+    expect(section.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('lists the round documents with title, size and what they are about', async () => {
+    renderOverview([cally], { documents })
+
+    const section = await findSection('Documentos anexados à rodada')
+    expect(section.getByText('Como cada um monta a página')).toBeInTheDocument()
+    expect(section.getByText('seo-comparacoes.md · 2,0 KB')).toBeInTheDocument()
+    expect(section.getByText('Estrutura das páginas de comparação.')).toBeInTheDocument()
+  })
+
+  it('says no document was attached when the round has none', async () => {
+    renderOverview([cally])
+
+    const section = await findSection('Documentos anexados à rodada')
+    expect(section.getByText('O agente não anexou nada nesta rodada.')).toBeInTheDocument()
+  })
+})
+
+describe('SeoOverview falha ao carregar a rodada', () => {
+  it('shows the failure and requests the round again on retry', async () => {
+    const user = userEvent.setup()
+    let attempts = 0
+    const api = mockApi({
+      [`GET ${API_ROUTES.seo.rounds(PROJECT_ID)}`]: { body: { rounds: [summary] } },
+      [`GET ${API_ROUTES.seo.round(PROJECT_ID, 'latest')}`]: () => {
+        attempts += 1
+        return attempts === 1 ? { status: 500, body: { error: 'x' } } : { body: buildRound([cally]) }
+      },
+    })
+    renderWithProviders(<SeoPage />, {
+      initialEntry: `/projects/${PROJECT_ID}/channels/seo`,
+      routePath: '/projects/:projectId/channels/seo',
+    })
+
+    expect(await screen.findByText('Não foi possível carregar a rodada.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+
+    expect(await screen.findByText('Esforço de publicação')).toBeInTheDocument()
+    expect(api.requestsTo('GET', API_ROUTES.seo.round(PROJECT_ID, 'latest'))).toHaveLength(2)
   })
 })

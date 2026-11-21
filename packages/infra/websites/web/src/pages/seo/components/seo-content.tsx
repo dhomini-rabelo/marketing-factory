@@ -38,7 +38,7 @@ export function SeoContent() {
       <SeoRoundHeader round={round} />
       <SeoPartialBanner round={round} />
       <SeoWarnings warnings={round.warnings} />
-      {tabState.activeTab === SEO_OVERVIEW_TAB && <SeoOverview competitors={round.competitors} />}
+      {tabState.activeTab === SEO_OVERVIEW_TAB && <SeoOverview round={round} />}
     </>
   )
 }
