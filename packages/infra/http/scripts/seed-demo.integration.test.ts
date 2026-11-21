@@ -8,6 +8,7 @@ import type { ChannelAnalysisHttp, ChannelSummaryHttp } from '@infra/http/presen
 import type { CompetitorHttp } from '@infra/http/presenters/competitor-presenter'
 import type { DocumentListItemHttp } from '@infra/http/presenters/document-presenter'
 import type { ProjectHttp } from '@infra/http/presenters/project-presenter'
+import type { SeoRoundHttp, SeoRoundSummaryHttp } from '@infra/http/presenters/seo-round-presenter'
 import { createTestApp, TestApp } from '@infra/http/__tests__/utils/create-test-app'
 import { sendJson } from '@infra/http/__tests__/utils/http-client'
 
@@ -93,7 +94,7 @@ describe('seed-demo script', () => {
   describe('with --coleta', () => {
     beforeEach(() => {
       app.database.exec(
-        'DELETE FROM channel_findings; DELETE FROM channel_analyses; DELETE FROM competitors; DELETE FROM competitor_approvals; DELETE FROM documents; DELETE FROM projects',
+        'DELETE FROM seo_round_documents; DELETE FROM seo_round_competitors; DELETE FROM seo_rounds; DELETE FROM channel_findings; DELETE FROM channel_analyses; DELETE FROM competitors; DELETE FROM competitor_approvals; DELETE FROM documents; DELETE FROM projects',
       )
     })
 
@@ -211,6 +212,98 @@ describe('seed-demo script', () => {
     it('rejects --coleta without a project name and --aprovada without --coleta', async () => {
       await expect(runSeed(['--coleta'])).rejects.toMatchObject({ code: 1 })
       await expect(runSeed(['--aprovada'])).rejects.toMatchObject({ code: 1 })
+    })
+
+    describe('with the seo flags', () => {
+      const SEO_NAMES = ['tl;dv', 'Fireflies.ai', 'Otter.ai', 'Fathom', 'MeetGeek', 'Tactiq']
+
+      async function readLatestRound(projectId: string | undefined) {
+        const round = await sendJson<SeoRoundHttp>({
+          baseUrl: app.baseUrl,
+          method: 'GET',
+          path: `/projects/${projectId}/seo/rounds/latest`,
+        })
+        return round.body
+      }
+
+      it('saves the complete round with six active competitors and no warning', async () => {
+        await runSeed(['--coleta', 'Bancada', '--aprovada', '--seo'])
+
+        const projectId = await findProjectId('Bancada')
+        const list = await sendJson<{ approval: string; competitors: CompetitorHttp[] }>({
+          baseUrl: app.baseUrl,
+          method: 'GET',
+          path: `/projects/${projectId}/competitors`,
+        })
+        expect(list.body.approval).toBe('approved')
+        expect(list.body.competitors.map((competitor) => competitor.name)).toEqual(SEO_NAMES)
+        expect(list.body.competitors.some((competitor) => competitor.incorrect)).toBe(false)
+
+        const round = await readLatestRound(projectId)
+        expect(round).toMatchObject({ status: 'complete', missing: [], warnings: [], tool: 'claude-code', collectedAt: '2026-11-21' })
+        expect(round.competitors.map((competitor) => competitor.name)).toEqual(SEO_NAMES)
+        expect(round.competitors.every((competitor) => competitor.collected)).toBe(true)
+        expect(round.documents).toHaveLength(6)
+
+        const rounds = await sendJson<{ rounds: SeoRoundSummaryHttp[] }>({
+          baseUrl: app.baseUrl,
+          method: 'GET',
+          path: `/projects/${projectId}/seo/rounds`,
+        })
+        expect(rounds.body.rounds).toHaveLength(1)
+      })
+
+      it('keeps the eight channel analyses beside the seo round', async () => {
+        await runSeed(['--coleta', 'Bancada', '--aprovada', '--seo'])
+
+        const projectId = await findProjectId('Bancada')
+        const channels = await sendJson<{ channels: ChannelSummaryHttp[] }>({
+          baseUrl: app.baseUrl,
+          method: 'GET',
+          path: `/projects/${projectId}/channels`,
+        })
+        expect(channels.body.channels).toHaveLength(8)
+      })
+
+      it('saves only the first four competitors with --seo-parcial', async () => {
+        await runSeed(['--coleta', 'Bancada', '--aprovada', '--seo-parcial'])
+
+        const round = await readLatestRound(await findProjectId('Bancada'))
+        expect(round.status).toBe('partial')
+        expect(round.missing).toEqual(['MeetGeek', 'Tactiq'])
+        expect(round.competitors.filter((competitor) => competitor.collected).map((competitor) => competitor.name)).toEqual(
+          SEO_NAMES.slice(0, 4),
+        )
+      })
+
+      it('warns only about tl;dv with --seo-conta-quebrada', async () => {
+        await runSeed(['--coleta', 'Bancada', '--aprovada', '--seo-conta-quebrada'])
+
+        const round = await readLatestRound(await findProjectId('Bancada'))
+        expect(round.status).toBe('complete')
+        expect(round.warnings).toHaveLength(1)
+        expect(round.warnings[0]).toMatchObject({ check: 'pageTypeSum', competitor: 'tl;dv' })
+      })
+
+      it('saves a round from fourteen days earlier before the new one with --seo-rodadas', async () => {
+        await runSeed(['--coleta', 'Bancada', '--aprovada', '--seo-rodadas'])
+
+        const projectId = await findProjectId('Bancada')
+        const rounds = await sendJson<{ rounds: SeoRoundSummaryHttp[] }>({
+          baseUrl: app.baseUrl,
+          method: 'GET',
+          path: `/projects/${projectId}/seo/rounds`,
+        })
+        expect(rounds.body.rounds).toHaveLength(2)
+        expect(rounds.body.rounds[0]).toMatchObject({ number: 2, isLatest: true, collectedAt: '2026-11-21' })
+        expect(rounds.body.rounds[1]).toMatchObject({ number: 1, isLatest: false, collectedAt: '2026-11-07', tool: 'claude-code' })
+      })
+
+      it('rejects two variations together and a flag without --aprovada', async () => {
+        await expect(runSeed(['--coleta', 'Bancada', '--aprovada', '--seo-parcial', '--seo-rodadas'])).rejects.toMatchObject({ code: 1 })
+        await expect(runSeed(['--coleta', 'Bancada', '--seo'])).rejects.toMatchObject({ code: 1 })
+        await expect(runSeed(['--seo'])).rejects.toMatchObject({ code: 1 })
+      })
     })
   })
 })

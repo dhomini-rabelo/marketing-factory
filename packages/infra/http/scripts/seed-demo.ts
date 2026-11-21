@@ -1,4 +1,6 @@
-import { DEMO_CHANNEL_ANALYSES, DEMO_COMPETITORS, MARKED_COMPETITOR_NAMES } from './seed-demo-collection'
+import { DEMO_CHANNEL_ANALYSES, DEMO_COMPETITORS, DemoCompetitor, MARKED_COMPETITOR_NAMES } from './seed-demo-collection'
+import { SEO_DEMO_COMPETITORS, SeoVariant, saveSeoRound } from './seed-demo-seo'
+import { sendJson } from './send-json'
 
 type DemoDocument = {
   title: string
@@ -26,6 +28,7 @@ type SeedOptions = {
   extraProjectsCount: number
   collectionProjectName: string | null
   approveCompetitors: boolean
+  seoVariant: SeoVariant | null
 }
 
 const DEFAULT_API_URL = 'http://127.0.0.1:7341'
@@ -173,18 +176,6 @@ function readExtraProjectsCount(args: string[]): number {
   return count
 }
 
-async function sendJson<Body>(apiUrl: string, method: string, path: string, body: unknown): Promise<Body> {
-  const response = await fetch(`${apiUrl}${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) {
-    throw new Error(`${method} ${path} respondeu ${response.status}: ${await response.text()}`)
-  }
-  return (await response.json()) as Body
-}
-
 async function createProject(apiUrl: string, project: Omit<DemoProject, 'documents'>) {
   return sendJson<CreatedProject>(apiUrl, 'POST', '/projects', project)
 }
@@ -206,14 +197,36 @@ function readCollectionProjectName(args: string[]): string | null {
   return projectName
 }
 
+const SEO_VARIANT_FLAGS: Record<string, SeoVariant> = {
+  '--seo-parcial': 'partial',
+  '--seo-conta-quebrada': 'brokenSum',
+  '--seo-rodadas': 'twoRounds',
+}
+
+function readSeoVariant(args: string[]): SeoVariant | null {
+  const variants = Object.entries(SEO_VARIANT_FLAGS)
+    .filter(([flag]) => args.includes(flag))
+    .map(([, variant]) => variant)
+
+  if (variants.length > 1) {
+    throw new Error('Use só uma variação de SEO por vez: --seo-parcial, --seo-conta-quebrada ou --seo-rodadas')
+  }
+  if (variants.length === 1) return variants[0]
+  return args.includes('--seo') ? 'complete' : null
+}
+
 function readSeedOptions(args: string[]): SeedOptions {
   const options: SeedOptions = {
     extraProjectsCount: readExtraProjectsCount(args),
     collectionProjectName: readCollectionProjectName(args),
     approveCompetitors: args.includes('--aprovada'),
+    seoVariant: readSeoVariant(args),
   }
   if (options.approveCompetitors && options.collectionProjectName === null) {
     throw new Error('--aprovada só vale junto com --coleta')
+  }
+  if (options.seoVariant !== null && !options.approveCompetitors) {
+    throw new Error('--seo só vale junto com --coleta e --aprovada')
   }
   return options
 }
@@ -227,12 +240,18 @@ function extraProjectName(position: number): string {
   return `Projeto de teste ${position}`
 }
 
-async function saveCollection(apiUrl: string, projectId: string, approveCompetitors: boolean) {
+async function saveCollection(
+  apiUrl: string,
+  projectId: string,
+  approveCompetitors: boolean,
+  competitors: DemoCompetitor[],
+  markedCompetitorNames: string[],
+) {
   const saved = await sendJson<SavedCompetitors>(apiUrl, 'PUT', `/projects/${projectId}/competitors`, {
-    competitors: DEMO_COMPETITORS,
+    competitors,
   })
 
-  for (const name of MARKED_COMPETITOR_NAMES) {
+  for (const name of markedCompetitorNames) {
     const savedCompetitor = saved.competitors.find((competitor) => competitor.name === name)
     await sendJson(apiUrl, 'PATCH', `/projects/${projectId}/competitors/${encodeURIComponent(savedCompetitor?.id ?? name)}`, {
       incorrect: true,
@@ -248,7 +267,11 @@ async function saveCollection(apiUrl: string, projectId: string, approveCompetit
   }
 }
 
-async function seedDemo(apiUrl: string, options: SeedOptions) {
+function listCollectionCompetitors(seoVariant: SeoVariant | null): DemoCompetitor[] {
+  return seoVariant === null ? DEMO_COMPETITORS : SEO_DEMO_COMPETITORS
+}
+
+async function seedDemo(apiUrl: string, options: SeedOptions): Promise<string | null> {
   if (options.collectionProjectName !== null) {
     const knownNames = listProjectNames(options.extraProjectsCount)
     if (!knownNames.includes(options.collectionProjectName)) {
@@ -275,20 +298,32 @@ async function seedDemo(apiUrl: string, options: SeedOptions) {
   }
 
   if (options.collectionProjectName !== null) {
-    await saveCollection(apiUrl, projectIdsByName.get(options.collectionProjectName) as string, options.approveCompetitors)
+    const projectId = projectIdsByName.get(options.collectionProjectName) as string
+    const markedNames = options.seoVariant === null ? MARKED_COMPETITOR_NAMES : []
+    await saveCollection(apiUrl, projectId, options.approveCompetitors, listCollectionCompetitors(options.seoVariant), markedNames)
+    if (options.seoVariant !== null) {
+      await saveSeoRound(apiUrl, projectId, options.seoVariant)
+    }
+    return projectId
   }
+
+  return null
 }
 
 const apiUrl = process.env.API_URL || DEFAULT_API_URL
 const options = readSeedOptions(process.argv.slice(2))
 
 seedDemo(apiUrl, options)
-  .then(() => {
+  .then((collectionProjectId) => {
     const total = DEMO_PROJECTS.length + options.extraProjectsCount
     console.log(`${total} projetos criados em ${apiUrl}`)
     if (options.collectionProjectName !== null) {
       const approval = options.approveCompetitors ? 'aprovada' : 'aguardando aprovação'
-      console.log(`Coleta gravada em ${options.collectionProjectName}: ${DEMO_COMPETITORS.length} concorrentes (${approval}) e ${DEMO_CHANNEL_ANALYSES.length} canais`)
+      const competitorsCount = listCollectionCompetitors(options.seoVariant).length
+      console.log(`Coleta gravada em ${options.collectionProjectName}: ${competitorsCount} concorrentes (${approval}) e ${DEMO_CHANNEL_ANALYSES.length} canais`)
+    }
+    if (options.seoVariant !== null) {
+      console.log(`SEO gravado (${options.seoVariant}): projectId ${collectionProjectId}, tela em /projects/${collectionProjectId}/channels/seo`)
     }
   })
   .catch((error: unknown) => {
