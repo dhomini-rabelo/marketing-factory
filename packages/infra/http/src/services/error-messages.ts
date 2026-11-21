@@ -20,6 +20,8 @@ export function describeNotFound(code: string, variables?: string[]): string {
     CHANNEL_NOT_FOUND: `Channel not found, use one of: ${variables?.join(', ')}`,
     ANALYSIS_NOT_FOUND: 'Channel analysis not collected yet',
     COMPETITOR_NOT_FOUND: 'Competitor not found in the project list',
+    SEO_ROUND_NOT_FOUND: 'SEO round not found',
+    SEO_COMPETITOR_NOT_FOUND: 'Competitor has no data in this SEO round',
   }
 
   return messages[code] ?? 'Resource not found'

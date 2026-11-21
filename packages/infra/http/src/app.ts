@@ -16,6 +16,12 @@ import { createProject } from '@infra/http/routes/project/create-project'
 import { getProject } from '@infra/http/routes/project/get-project'
 import { listProjects } from '@infra/http/routes/project/list-projects'
 import { updateProject } from '@infra/http/routes/project/update-project'
+import { createSeoRound } from '@infra/http/routes/seo/create-seo-round'
+import { getSeoCompetitor } from '@infra/http/routes/seo/get-seo-competitor'
+import { getSeoRound } from '@infra/http/routes/seo/get-seo-round'
+import { listSeoRounds } from '@infra/http/routes/seo/list-seo-rounds'
+import { saveSeoCompetitor } from '@infra/http/routes/seo/save-seo-competitor'
+import { saveSeoDocument } from '@infra/http/routes/seo/save-seo-document'
 
 export const app = express()
 
@@ -37,5 +43,12 @@ app.put('/projects/:id/competitors', saveCompetitors)
 app.get('/projects/:id/competitors', listCompetitors)
 app.patch('/projects/:id/competitors/:competitorId', markCompetitor)
 app.put('/projects/:id/competitors-approval', setCompetitorsApproval)
+
+app.post('/projects/:id/seo/rounds', createSeoRound)
+app.get('/projects/:id/seo/rounds', listSeoRounds)
+app.get('/projects/:id/seo/rounds/:roundId', getSeoRound)
+app.put('/projects/:id/seo/rounds/:roundId/competitors/:name', saveSeoCompetitor)
+app.get('/projects/:id/seo/rounds/:roundId/competitors/:name', getSeoCompetitor)
+app.post('/projects/:id/seo/rounds/:roundId/documents', saveSeoDocument)
 
 app.use(errorHandler)

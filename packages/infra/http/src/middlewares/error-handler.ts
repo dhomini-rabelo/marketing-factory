@@ -1,7 +1,11 @@
 import type { NextFunction, Request, Response } from 'express'
 import { ZodError } from 'zod'
 import { DangerErrors, DomainError } from '@domain/base'
-import { NoActiveCompetitorsError } from '@domain/competitor-analysis'
+import {
+  NoActiveCompetitorsError,
+  SeoCompetitorAlreadySavedError,
+  SeoDocumentAlreadySavedError,
+} from '@domain/competitor-analysis'
 import { FieldErrorCode, FieldIssue, FieldsValidationError } from '@domain/projects'
 import { HttpStatus } from '@modules/utils'
 import {
@@ -50,11 +54,29 @@ export function errorHandler(
     })
   }
 
+  if (error instanceof SeoCompetitorAlreadySavedError) {
+    return sendError(response, HttpStatus.CONFLICT, {
+      error: {
+        code: 'SEO_COMPETITOR_ALREADY_SAVED',
+        message: 'Competitor already saved in this SEO round',
+      },
+    })
+  }
+
+  if (error instanceof SeoDocumentAlreadySavedError) {
+    return sendError(response, HttpStatus.CONFLICT, {
+      error: {
+        code: 'SEO_DOCUMENT_ALREADY_SAVED',
+        message: 'Document already saved in this SEO round',
+      },
+    })
+  }
+
   if (bodyParserErrorType === 'entity.too.large') {
     return sendError(response, HttpStatus.PAYLOAD_TOO_LARGE, {
       error: {
         code: 'PAYLOAD_TOO_LARGE',
-        message: 'Request body is larger than 1 MB, split the content into smaller documents',
+        message: 'Request body is larger than 1 MB, split the content into smaller parts',
       },
     })
   }

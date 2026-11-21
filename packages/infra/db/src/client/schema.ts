@@ -66,6 +66,35 @@ export function createSchema(database: Database): void {
       qualified_at TEXT NOT NULL,
       PRIMARY KEY (project_id, normalized_name)
     );
+    CREATE TABLE IF NOT EXISTS seo_rounds (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id),
+      tool TEXT NOT NULL,
+      collected_at TEXT NOT NULL,
+      note TEXT NOT NULL,
+      market TEXT NOT NULL,
+      expected_competitors TEXT NOT NULL,
+      searches TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS seo_round_competitors (
+      id TEXT NOT NULL,
+      round_id TEXT NOT NULL REFERENCES seo_rounds(id),
+      normalized_name TEXT NOT NULL,
+      name TEXT NOT NULL,
+      data TEXT NOT NULL,
+      PRIMARY KEY (round_id, normalized_name)
+    );
+    CREATE TABLE IF NOT EXISTS seo_round_documents (
+      id TEXT NOT NULL,
+      round_id TEXT NOT NULL REFERENCES seo_rounds(id),
+      file_name TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      about TEXT NOT NULL,
+      body TEXT NOT NULL,
+      PRIMARY KEY (round_id, file_name)
+    );
     CREATE TABLE IF NOT EXISTS competitor_approvals (
       project_id TEXT PRIMARY KEY REFERENCES projects(id),
       approval TEXT NOT NULL
