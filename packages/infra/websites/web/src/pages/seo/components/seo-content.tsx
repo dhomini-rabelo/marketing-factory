@@ -1,6 +1,7 @@
 import { useParams } from 'react-router'
 import { useSeoRoundData } from '@/layout/hooks/api/use-seo-round-data'
 import { useSeoRoundsData } from '@/layout/hooks/api/use-seo-rounds-data'
+import { SeoOverview } from '@/pages/seo/components/overview/seo-overview'
 import { SeoEmpty } from '@/pages/seo/components/seo-empty'
 import { SeoError } from '@/pages/seo/components/seo-error'
 import { SeoLoading } from '@/pages/seo/components/seo-loading'
@@ -8,11 +9,14 @@ import { SeoPartialBanner } from '@/pages/seo/components/seo-partial-banner'
 import { SeoRoundHeader } from '@/pages/seo/components/seo-round-header'
 import { SeoTabs } from '@/pages/seo/components/seo-tabs'
 import { SeoWarnings } from '@/pages/seo/components/seo-warnings'
+import { useSeoTab } from '@/pages/seo/contexts/seo-tab-context'
 import { useSeoRoundId } from '@/pages/seo/hooks/use-seo-round-id'
+import { SEO_OVERVIEW_TAB } from '@/pages/seo/utils/seo-tab'
 
 export function SeoContent() {
   const { projectId = '' } = useParams()
   const { state: roundIdState } = useSeoRoundId()
+  const { state: tabState } = useSeoTab()
   const roundsRequest = useSeoRoundsData(projectId)
   const hasRounds = (roundsRequest.state.data ?? []).length > 0
   const roundRequest = useSeoRoundData({ projectId, roundId: roundIdState.roundId, enabled: hasRounds })
@@ -34,6 +38,7 @@ export function SeoContent() {
       <SeoRoundHeader round={round} />
       <SeoPartialBanner round={round} />
       <SeoWarnings warnings={round.warnings} />
+      {tabState.activeTab === SEO_OVERVIEW_TAB && <SeoOverview competitors={round.competitors} />}
     </>
   )
 }
