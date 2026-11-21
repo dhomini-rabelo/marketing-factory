@@ -2,9 +2,16 @@ import { z } from 'zod'
 
 const objectSchema = z.record(z.string(), z.unknown())
 
+function isRealDate(value: string) {
+  return !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
+}
+
 export const seoRoundBodySchema = z.object({
   tool: z.enum(['claude-code', 'grok-bot']),
-  collectedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  collectedAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine(isRealDate),
   note: z.string(),
   market: z.string(),
   searches: z.array(objectSchema).optional(),

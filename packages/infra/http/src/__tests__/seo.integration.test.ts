@@ -480,4 +480,13 @@ describe('seo routes', () => {
     expect(badTool.status).toBe(400)
     expect(badDate.status).toBe(400)
   })
+
+  it.each(['2026-13-45', '2026-02-31'])('refuses the nonexistent date %s as a validation error', async (collectedAt) => {
+    await approveCompetitors()
+
+    const response = await openRound({ collectedAt })
+
+    expect(response.status).toBe(400)
+    expect((response.body as unknown as ErrorBody).error.code).toBe('VALIDATION_ERROR')
+  })
 })
