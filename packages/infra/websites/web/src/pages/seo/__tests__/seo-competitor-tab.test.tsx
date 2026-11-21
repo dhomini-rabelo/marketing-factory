@@ -164,12 +164,18 @@ describe('competitor tab sections', () => {
     const tab = await screen.findByText('Esforço e tipos de página', { selector: 'h3' })
     const container = tab.closest('[data-secao="aba-concorrente"]') as HTMLElement
     const titles = Array.from(container.querySelectorAll(':scope > section')).map((section) => section.getAttribute('data-secao'))
-    expect(titles.slice(0, 5)).toEqual([
+    expect(titles).toEqual([
       'Esforço e tipos de página',
       'Categorias com ritmo',
       'Formato e funil por categoria',
       'Públicos',
       'Exemplos por tema',
+      'Comunicação por post',
+      'Imagens por post',
+      'FAQ, chamadas para o produto e links',
+      'Autores e tom',
+      'Pastas em série',
+      'Posts antigos',
     ])
     expect(api.requestsTo('GET', API_ROUTES.seo.competitor(PROJECT_ID, 'latest', COMPETITOR_NAME))).toHaveLength(1)
   })
@@ -256,6 +262,144 @@ describe('competitor tab sections', () => {
     expect(within(blankRow).queryByText('resumo do card')).not.toBeInTheDocument()
     expect(blankRow.querySelectorAll('td')[2]).toBeEmptyDOMElement()
     expect(blankRow.querySelectorAll('td')[3]).toBeEmptyDOMElement()
+  })
+})
+
+const BLOG_LIMITS = 'Parágrafos e palavras vêm do article ou main, que faltou em alguns posts. Sem dateModified em um post antigo.'
+
+function buildItem(url: string, role: string, numbers: Record<string, number | null>, texts: Record<string, string>, publishedAt: string | null) {
+  return { url, pageType: 'blog', publishedAt, numbers, texts: { sampleRole: role, title: `Título ${url}`, ...texts } }
+}
+
+const blogItems = [
+  buildItem(
+    'https://cally.com/a',
+    'recent',
+    { words: 1200, paragraphs: 30, wordsPerParagraph: 40, lists: 3, tables: 0, h2Count: 5, h3Count: 6, images: 4, imagesAltPct: 50, faqQuestions: 3, ctaLinks: 2, internalLinks: 9 },
+    { ldTypes: 'Article, FAQPage', ctaTargets: 'app' },
+    '2026-11-10',
+  ),
+  buildItem(
+    'https://cally.com/b',
+    'recent',
+    { words: null, paragraphs: null, wordsPerParagraph: null, images: 0, imagesAltPct: null, faqQuestions: null, ctaLinks: 0, internalLinks: 2 },
+    {},
+    '2026-11-05',
+  ),
+  buildItem('https://cally.com/c', 'old', { words: 800, images: 1, imagesAltPct: 100 }, { modifiedAt: '2026-02-01' }, '2025-01-10'),
+  buildItem('https://cally.com/d', 'old', { words: 700, images: 1, imagesAltPct: 100 }, {}, '2025-02-10'),
+]
+
+const blogDetail: SeoCompetitor = {
+  ...detail,
+  profile: { numbers: { authorsSeen: 4 }, texts: { limits: BLOG_LIMITS, authorKind: 'people', tone: 'Direto e informal' } },
+  items: blogItems,
+  folders: [
+    { numbers: { pages: 86 }, texts: { folder: '/integrations' } },
+    { numbers: { pages: 12 }, texts: { folder: '/templates' } },
+  ],
+}
+
+function findRow(section: ReturnType<typeof findSection>, url: string) {
+  return within(section.getAllByRole('row').find((row) => row.getAttribute('data-item') === url) as HTMLElement)
+}
+
+describe('competitor tab blog sections', () => {
+  it('shows "não medido" with the collection reason, never zero, for communication numbers that came empty', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: blogDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Comunicação por post', { selector: 'h3' })
+
+    const section = findSection('Comunicação por post')
+    expect(section.getAllByRole('row')).toHaveLength(5)
+    expect(findRow(section, 'https://cally.com/a').getByText('1.200')).toBeInTheDocument()
+    const missing = findRow(section, 'https://cally.com/b').getAllByText('não medido')
+    expect(missing).toHaveLength(9)
+    expect(missing[0]).toHaveAttribute('title', 'Parágrafos e palavras vêm do article ou main, que faltou em alguns posts.')
+  })
+
+  it('shows the images and the share with alternative text, and says when a post has no images', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: blogDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Imagens por post', { selector: 'h3' })
+
+    const section = findSection('Imagens por post')
+    expect(findRow(section, 'https://cally.com/a').getByText('50%')).toBeInTheDocument()
+    expect(findRow(section, 'https://cally.com/b').getByText('sem imagens')).toBeInTheDocument()
+  })
+
+  it('shows FAQ, schema types, call-to-action destinations and the reason when the schema is missing', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: blogDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('FAQ, chamadas para o produto e links', { selector: 'h3' })
+
+    const section = findSection('FAQ, chamadas para o produto e links')
+    const rowA = findRow(section, 'https://cally.com/a')
+    expect(rowA.getByText('Article, FAQPage')).toBeInTheDocument()
+    expect(rowA.getByText('app')).toBeInTheDocument()
+    const rowB = findRow(section, 'https://cally.com/b')
+    expect(rowB.getByText('nenhum')).toBeInTheDocument()
+    expect(rowB.getAllByText('não coletado').length).toBeGreaterThan(0)
+  })
+
+  it('shows authors, who signs and the tone, with low confidence on the tone', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: blogDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Autores e tom', { selector: 'h3' })
+
+    const section = findSection('Autores e tom')
+    expect(section.getByText('4')).toBeInTheDocument()
+    expect(section.getByText('pessoas')).toBeInTheDocument()
+    expect(section.getByText('Direto e informal')).toBeInTheDocument()
+    expect(section.getByText('baixa confiança')).toBeInTheDocument()
+  })
+
+  it('marks authors and tone as not collected when the profile does not bring them', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: { ...blogDetail, profile: { texts: { limits: 'Sem autor na página.' } } } } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Autores e tom', { selector: 'h3' })
+
+    const missing = findSection('Autores e tom').getAllByText('não coletado')
+    expect(missing).toHaveLength(3)
+    expect(missing[0]).toHaveAttribute('title', 'Sem autor na página.')
+  })
+
+  it('lists the series folders with the page count', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: blogDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Pastas em série', { selector: 'h3' })
+
+    const section = findSection('Pastas em série')
+    expect(section.getAllByRole('listitem')).toHaveLength(2)
+    expect(within(section.getByText('/integrations').closest('li') as HTMLElement).getByText('86')).toBeInTheDocument()
+  })
+
+  it('lists only the old posts with age and whether they were updated', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: blogDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Posts antigos', { selector: 'h3' })
+
+    const section = findSection('Posts antigos')
+    expect(section.getAllByRole('row')).toHaveLength(3)
+    const rowC = findRow(section, 'https://cally.com/c')
+    expect(rowC.getByText('23 meses')).toBeInTheDocument()
+    expect(rowC.getByText('atualizado')).toBeInTheDocument()
+    const rowD = findRow(section, 'https://cally.com/d')
+    expect(rowD.getAllByText('não coletado').length).toBeGreaterThan(0)
+  })
+
+  it('shows the collection limits instead of empty blog sections when the competitor has no blog', async () => {
+    const limits = 'O blog exige login e foi barrado.'
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: { ...blogDetail, items: [], folders: [], profile: { texts: { limits } } } } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Comunicação por post', { selector: 'h3' })
+
+    for (const title of ['Comunicação por post', 'Imagens por post', 'FAQ, chamadas para o produto e links']) {
+      const section = findSection(title)
+      expect(section.getByText('Nenhuma página lida na amostra.')).toBeInTheDocument()
+      expect(section.getByText(limits)).toBeInTheDocument()
+    }
+    expect(findSection('Posts antigos').getByText('Sem post antigo na amostra.')).toBeInTheDocument()
   })
 })
 

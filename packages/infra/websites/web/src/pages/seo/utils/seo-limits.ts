@@ -2,6 +2,14 @@ const LIMIT_REASON_PATTERNS = {
   audience: /público|audience|classificad|20 exemplos/i,
   subtopics: /subtopics|subassunto/i,
   date: /datePublished|data real|sem data|datas/i,
+  author: /autor/i,
+  paragraphs: /parágrafo|article|main/i,
+  faq: /FAQ|JSON-LD/i,
+  images: /imagem|imagens|article|main/i,
+  old: /antigo|180 dias/i,
+  modifiedAt: /dateModified|modifiedAt/i,
+  summary: /resumo|card/i,
+  tone: /\btom\b/i,
 }
 
 export type LimitReasonKey = keyof typeof LIMIT_REASON_PATTERNS
