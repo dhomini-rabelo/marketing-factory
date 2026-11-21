@@ -98,6 +98,15 @@ async function findComparisonsSection() {
   return within(heading.closest('section') as HTMLElement)
 }
 
+function expectScrollableInsideViewport(dialog: HTMLElement, rowInBody: HTMLElement) {
+  expect(dialog).toHaveClass('max-h-[calc(100vh-3rem)]', 'flex', 'flex-col')
+  expect(dialog).not.toHaveClass('max-h-full')
+  const body = dialog.querySelector('.overflow-y-auto')
+  expect(body).toHaveClass('min-h-0')
+  expect(body).toContainElement(rowInBody)
+  expect(body).not.toContainElement(within(dialog).getAllByRole('heading')[0])
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -117,6 +126,18 @@ describe('comparisons dialog', () => {
     await waitFor(() => expect(within(dialog).getAllByRole('row')).toHaveLength(9))
     expect(within(dialog).getByText('cally-vs-rival-8')).toBeInTheDocument()
     expect(api.requestsTo('GET', API_ROUTES.seo.competitor(PROJECT_ID, 'latest', COMPETITOR_NAME))).toHaveLength(1)
+  })
+
+  it('caps the window at the viewport height and scrolls the list inside it with the header fixed', async () => {
+    const user = userEvent.setup()
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: competitorDetail } })
+
+    const section = await findComparisonsSection()
+    await user.click(section.getByRole('button', { name: /ver todas/ }))
+
+    const dialog = await screen.findByRole('dialog')
+    await waitFor(() => expect(within(dialog).getAllByRole('row')).toHaveLength(9))
+    expectScrollableInsideViewport(dialog, within(dialog).getAllByRole('row')[1])
   })
 
   it('closes the window with the close button, Escape and a click outside', async () => {
@@ -251,7 +272,6 @@ describe('audience examples dialog', () => {
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getAllByRole('row')).toHaveLength(41)
-    expect(dialog.querySelector('.overflow-y-auto')).toContainElement(within(dialog).getAllByRole('row')[1])
-    expect(dialog).toHaveClass('max-h-full')
+    expectScrollableInsideViewport(dialog, within(dialog).getAllByRole('row')[1])
   })
 })

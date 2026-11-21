@@ -24,7 +24,7 @@ export function AudienceExamplesDialog({ competitorName, audienceRole, examples,
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex max-h-full w-full max-w-3xl flex-col rounded-3 bg-card shadow-2"
+        className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl flex-col rounded-3 bg-card shadow-2"
       >
         <header className="flex items-start justify-between gap-3 px-5 py-4">
           <div>
@@ -35,7 +35,7 @@ export function AudienceExamplesDialog({ competitorName, audienceRole, examples,
             ×
           </button>
         </header>
-        <div className="overflow-y-auto px-5 pb-5">
+        <div className="min-h-0 overflow-y-auto px-5 pb-5">
           <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr>

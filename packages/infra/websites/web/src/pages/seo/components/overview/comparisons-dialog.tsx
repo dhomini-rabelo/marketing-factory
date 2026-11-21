@@ -28,7 +28,7 @@ export function ComparisonsDialog({ competitorName, onClose }: ComparisonsDialog
         role="dialog"
         aria-modal="true"
         aria-label={`Comparações de ${competitorName}`}
-        className="flex max-h-full w-full max-w-3xl flex-col rounded-3 bg-card shadow-2"
+        className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl flex-col rounded-3 bg-card shadow-2"
       >
         <header className="flex items-center justify-between gap-3 px-5 py-4">
           <h3 className="text-[15px] font-bold">Comparações de {competitorName}</h3>
@@ -36,7 +36,7 @@ export function ComparisonsDialog({ competitorName, onClose }: ComparisonsDialog
             ×
           </button>
         </header>
-        <div className="overflow-y-auto px-5 pb-5">
+        <div className="min-h-0 overflow-y-auto px-5 pb-5">
           {state.isLoading && <p role="status" className="text-ink-2">Carregando as comparações...</p>}
           {state.isError && (
             <div role="alert">
