@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import { Worker } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ID } from '@domain/base'
+import { ID, createID } from '@domain/base'
 import {
   CHANNEL_ORDER,
   Channel,
@@ -99,12 +99,12 @@ describe('SqliteChannelAnalysisRepository', () => {
   it('saves an analysis with its findings in write order', async () => {
     const analysis = buildAnalysis({
       projectId,
-      channel: Channel.SEO,
+      channel: Channel.SITE_PRICING,
       findings: [buildFinding('Third', FindingAspect.CTA), buildFinding('First')],
     })
 
     const result = await repository.replaceForChannel(analysis)
-    const found = await repository.findByChannel({ projectId, channel: Channel.SEO })
+    const found = await repository.findByChannel({ projectId, channel: Channel.SITE_PRICING })
 
     expect(result.wasCreated).toBe(true)
     expect(found?.id.isEqual(analysis.id)).toBe(true)
@@ -119,9 +119,9 @@ describe('SqliteChannelAnalysisRepository', () => {
   })
 
   it('replaces the analysis and every finding when the same channel is saved again', async () => {
-    const first = await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SEO }))
+    const first = await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SITE_PRICING }))
     const second = await repository.replaceForChannel(
-      buildAnalysis({ projectId, channel: Channel.SEO, score: 3, findings: [buildFinding('Only')] }),
+      buildAnalysis({ projectId, channel: Channel.SITE_PRICING, score: 3, findings: [buildFinding('Only')] }),
     )
     const collected = await repository.listCollected(projectId)
     const findingsCount = temp.database.prepare('SELECT COUNT(*) AS total FROM channel_findings').get()
@@ -136,36 +136,54 @@ describe('SqliteChannelAnalysisRepository', () => {
   })
 
   it('keeps the previous analysis whole when the replacement fails midway', async () => {
-    const previous = buildAnalysis({ projectId, channel: Channel.SEO })
+    const previous = buildAnalysis({ projectId, channel: Channel.SITE_PRICING })
     await repository.replaceForChannel(previous)
     const broken = buildAnalysis({
       projectId,
-      channel: Channel.SEO,
+      channel: Channel.SITE_PRICING,
       score: 1,
       findings: [buildFinding('Valid'), { ...buildFinding('Broken'), statement: null as unknown as string }],
     })
 
     await expect(repository.replaceForChannel(broken)).rejects.toThrow()
-    const found = await repository.findByChannel({ projectId, channel: Channel.SEO })
+    const found = await repository.findByChannel({ projectId, channel: Channel.SITE_PRICING })
 
     expect(found?.props).toEqual(previous.props)
   })
 
   it('lists the collected channels in the channel order of the domain', async () => {
     await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.ADS }))
-    await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SEO }))
+    await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SITE_PRICING }))
     await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.LINKEDIN }))
 
     const collected = await repository.listCollected(projectId)
 
     expect(collected.map((analysis) => analysis.props.channel)).toEqual([
-      Channel.SEO,
+      Channel.SITE_PRICING,
       Channel.LINKEDIN,
       Channel.ADS,
     ])
   })
 
-  it('accepts nine simultaneous writes of different channels from separate connections', async () => {
+  it('does not list the row of the retired seo channel and keeps it in the table', async () => {
+    temp.database
+      .prepare(
+        `INSERT INTO channel_analyses
+           (id, project_id, channel, score, rationale, best_content_type,
+            best_content_evidence, best_content_basis, collected_at)
+         VALUES (?, ?, 'seo', 8, 'Old SEO note', 'guide', 'Most read', 'fact', '2026-11-01T10:00:00.000Z')`,
+      )
+      .run(createID().toValue(), projectId.toValue())
+    await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.LINKEDIN }))
+
+    const collected = await repository.listCollected(projectId)
+    const seoRows = temp.database.prepare("SELECT COUNT(*) AS total FROM channel_analyses WHERE channel = 'seo'").get()
+
+    expect(collected.map((analysis) => analysis.props.channel)).toEqual([Channel.LINKEDIN])
+    expect(seoRows).toEqual({ total: 1 })
+  })
+
+  it('accepts eight simultaneous writes of different channels from separate connections', async () => {
     const channels = [...CHANNEL_ORDER]
     const repositories = channels.map(() => new SqliteChannelAnalysisRepository(temp.reopen()))
 
@@ -176,7 +194,7 @@ describe('SqliteChannelAnalysisRepository', () => {
     )
     const collected = await repository.listCollected(projectId)
 
-    expect(channels).toHaveLength(9)
+    expect(channels).toHaveLength(CHANNEL_ORDER.length)
     expect(collected.map((analysis) => analysis.props.channel)).toEqual(channels)
     collected.forEach((analysis) => expect(analysis.props.findings).toHaveLength(2))
   })
@@ -223,7 +241,7 @@ describe('SqliteChannelAnalysisRepository', () => {
     for (const channel of CHANNEL_ORDER) {
       await repository.replaceForChannel(buildAnalysis({ projectId, channel }))
     }
-    await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SEO, score: 2 }))
+    await repository.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SITE_PRICING, score: 2 }))
 
     expect(before.projects).toHaveLength(1)
     expect(before.documents).toHaveLength(1)
@@ -239,7 +257,7 @@ describe('SqliteChannelAnalysisRepository', () => {
         repositories[index].replaceForChannel(
           buildAnalysis({
             projectId,
-            channel: Channel.SEO,
+            channel: Channel.SITE_PRICING,
             score,
             findings: [buildFinding(`Score ${score}`), buildFinding(`Score ${score} again`)],
           }),
@@ -263,11 +281,11 @@ describe('SqliteChannelAnalysisRepository', () => {
     const concurrent = new SqliteChannelAnalysisRepository(temp.reopen())
 
     const startedAt = Date.now()
-    const result = await concurrent.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SEO }))
+    const result = await concurrent.replaceForChannel(buildAnalysis({ projectId, channel: Channel.SITE_PRICING }))
     await exited
 
     expect(result.wasCreated).toBe(true)
     expect(Date.now() - startedAt).toBeGreaterThanOrEqual(200)
-    expect(await repository.findByChannel({ projectId, channel: Channel.SEO })).not.toBeNull()
+    expect(await repository.findByChannel({ projectId, channel: Channel.SITE_PRICING })).not.toBeNull()
   })
 })

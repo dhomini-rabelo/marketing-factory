@@ -383,7 +383,7 @@ describe('competitor routes', () => {
     const result = await sendJson({
       baseUrl: app.baseUrl,
       method: 'PUT',
-      path: `/projects/${projectId}/channels/seo`,
+      path: `/projects/${projectId}/channels/linkedin`,
       body: {
         score: 3,
         rationale: 'Sem lista de concorrentes',
@@ -400,7 +400,7 @@ describe('competitor routes', () => {
     const result = await sendJson({
       baseUrl: app.baseUrl,
       method: 'PUT',
-      path: `/projects/${projectId}/channels/seo`,
+      path: `/projects/${projectId}/channels/linkedin`,
       body: {
         score: 4,
         rationale: 'Lista salva e ainda pendente',

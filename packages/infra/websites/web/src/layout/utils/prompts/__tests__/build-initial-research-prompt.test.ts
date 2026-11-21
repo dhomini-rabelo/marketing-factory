@@ -4,7 +4,6 @@ import { buildInitialResearchPrompt } from '@/layout/utils/prompts/build-initial
 const PROJECT_ID = '3f1c2a9e-7b4d-4e0a-9d51-0c6a8e2b7f14'
 const API_URL = 'http://127.0.0.1:7341'
 const CHANNELS = [
-  ['seo', 'SEO e blog'],
   ['site-pricing', 'Site e preço'],
   ['linkedin', 'LinkedIn'],
   ['instagram', 'Instagram'],
@@ -54,12 +53,21 @@ describe('buildInitialResearchPrompt', () => {
     expect(prompt).toContain('exatamente como está na lista')
   })
 
-  it('asks to cover the nine channels with one helper agent for each, listing the channel keys', () => {
-    expect(prompt).toContain('Cubra os nove canais')
+  it('asks to cover the eight channels with one helper agent for each, listing the channel keys', () => {
+    expect(prompt).toContain('Cubra os oito canais')
     expect(prompt).toContain('um agente auxiliar para cada canal')
     CHANNELS.forEach(([key, label]) => {
       expect(prompt).toContain(`- ${key}: ${label}`)
     })
+  })
+
+  it('lists exactly the eight channel keys, without seo', () => {
+    const listedKeys = prompt.split('\n').filter((line) => /^- [a-z-]+: /.test(line) && CHANNELS.some(([key]) => line.startsWith(`- ${key}: `)))
+
+    expect(listedKeys).toHaveLength(CHANNELS.length)
+    expect(CHANNELS).toHaveLength(8)
+    expect(prompt).not.toContain('- seo:')
+    expect(prompt).not.toContain('SEO e blog')
   })
 
   it('asks for public reading only: no account, no login, no paid service', () => {

@@ -85,7 +85,7 @@ function buildChannel(
 
 const channels: ChannelSummary[] = [
   buildChannel(Channel.LINKEDIN, { score: 8 }),
-  buildChannel(Channel.SEO, { score: 6 }),
+  buildChannel(Channel.INSTAGRAM, { score: 6 }),
   buildChannel(Channel.X_NETWORK, { score: 3, partial: true }),
   buildChannel(Channel.TIKTOK, {
     score: null,
@@ -365,7 +365,7 @@ describe("Sidebar", () => {
 
       expect(channelLinks.map((link) => link.getAttribute("href"))).toEqual([
         `/projects/${FIRST_PROJECT_ID}/channels/linkedin`,
-        `/projects/${FIRST_PROJECT_ID}/channels/seo`,
+        `/projects/${FIRST_PROJECT_ID}/channels/instagram`,
         `/projects/${FIRST_PROJECT_ID}/channels/x`,
         `/projects/${FIRST_PROJECT_ID}/channels/tiktok`,
         `/projects/${FIRST_PROJECT_ID}/channels/youtube`,

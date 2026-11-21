@@ -28,7 +28,7 @@ describe('SaveChannelAnalysisUseCase', () => {
   let project: Project
   let sut: SaveChannelAnalysisUseCase
 
-  const save = (overrides: Partial<ReturnType<typeof makeChannelAnalysisInput>> = {}, channel = 'seo') =>
+  const save = (overrides: Partial<ReturnType<typeof makeChannelAnalysisInput>> = {}, channel = 'linkedin') =>
     sut.execute({
       projectId: project.id.toValue(),
       channel,
@@ -90,7 +90,7 @@ describe('SaveChannelAnalysisUseCase', () => {
   })
 
   it('keeps one analysis per channel', async () => {
-    await save({}, 'seo')
+    await save({}, 'linkedin')
     await save({}, 'youtube')
 
     expect(channelAnalysisRepository.items).toHaveLength(2)
@@ -263,13 +263,13 @@ describe('SaveChannelAnalysisUseCase', () => {
     await expect(
       sut.execute({
         projectId: createID().toValue(),
-        channel: 'seo',
+        channel: 'linkedin',
         ...makeChannelAnalysisInput(),
       }),
     ).rejects.toMatchObject({ response: { code: 'PROJECT_NOT_FOUND' } })
   })
 
-  it('rejects a channel outside the nine', async () => {
+  it('rejects a channel outside the eight', async () => {
     await expect(save({}, 'facebook')).rejects.toMatchObject({
       response: { code: 'CHANNEL_NOT_FOUND' },
     })

@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Channel, CompetitorRole } from '@domain/competitor-analysis'
+import type { ErrorBody } from '@infra/http/middlewares/error-handler'
 import type { ChannelAnalysisHttp, ChannelSummaryHttp } from '@infra/http/presenters/channel-analysis-presenter'
 import type { CompetitorHttp } from '@infra/http/presenters/competitor-presenter'
 import type { DocumentListItemHttp } from '@infra/http/presenters/document-presenter'
@@ -134,7 +135,6 @@ describe('seed-demo script', () => {
         channels.body.channels.map((channel) => [channel.channel, { collected: channel.collected, score: channel.score }]),
       )
       expect(summary).toEqual({
-        seo: { collected: true, score: 9 },
         linkedin: { collected: true, score: 8 },
         'site-pricing': { collected: true, score: 6 },
         [Channel.X_NETWORK]: { collected: true, score: 5 },
@@ -146,7 +146,7 @@ describe('seed-demo script', () => {
       })
 
       const findingsCount: Record<string, number> = {}
-      for (const channel of ['seo', 'linkedin', 'site-pricing', 'x', 'youtube', 'reddit', 'instagram']) {
+      for (const channel of ['linkedin', 'site-pricing', 'x', 'youtube', 'reddit', 'instagram']) {
         const analysis = await sendJson<ChannelAnalysisHttp>({
           baseUrl: app.baseUrl,
           method: 'GET',
@@ -154,29 +154,21 @@ describe('seed-demo script', () => {
         })
         findingsCount[channel] = analysis.body.findings.length
       }
-      expect(findingsCount).toEqual({ seo: 9, linkedin: 8, 'site-pricing': 6, [Channel.X_NETWORK]: 5, youtube: 4, reddit: 2, instagram: 0 })
+      expect(findingsCount).toEqual({ linkedin: 8, 'site-pricing': 6, [Channel.X_NETWORK]: 5, youtube: 4, reddit: 2, instagram: 0 })
     })
 
-    it('writes the seo analysis with seven facts, two hypotheses, four aspects and four of five competitors', async () => {
+    it('does not write a seo channel analysis', async () => {
       await runSeed(['--coleta', 'Bancada'])
 
       const projectId = await findProjectId('Bancada')
-      const analysis = await sendJson<ChannelAnalysisHttp>({
+      const analysis = await sendJson<ErrorBody>({
         baseUrl: app.baseUrl,
         method: 'GET',
         path: `/projects/${projectId}/channels/seo`,
       })
 
-      const findings = analysis.body.findings
-      expect(findings.filter((finding) => finding.kind === 'fact')).toHaveLength(7)
-      expect(findings.filter((finding) => finding.kind === 'hypothesis')).toHaveLength(2)
-      expect(new Set(findings.map((finding) => finding.aspect)).size).toBe(4)
-      expect(new Set(findings.map((finding) => finding.competitor)).size).toBe(4)
-      expect(analysis.body.bestContent.basis).toBe('fact')
-      for (const fact of findings.filter((finding) => finding.kind === 'fact')) {
-        expect(fact.url).toMatch(/^https:\/\//)
-        expect(fact.excerpt).toBeTruthy()
-      }
+      expect(analysis.status).toBe(404)
+      expect(analysis.body.error.code).toBe('CHANNEL_NOT_FOUND')
     })
 
     it('approves the list only with --aprovada', async () => {

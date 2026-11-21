@@ -131,28 +131,6 @@ function buildFindings(channel: string, drafts: FindingDraft[]): DemoFinding[] {
 
 export const DEMO_CHANNEL_ANALYSES: DemoChannelAnalysis[] = [
   {
-    channel: 'seo',
-    score: 9,
-    rationale:
-      'Quatro dos cinco concorrentes ativos publicam guias de preço e comparativos que ranqueiam nas buscas de orçamento de marcenaria; é o canal onde a disputa é mais forte.',
-    bestContent: {
-      type: 'Guia de preço de marcenaria por metro quadrado',
-      evidence: 'O guia do Promob aparece no topo para "preço de marcenaria" e recebe cerca de 12 mil visitas por mês (estimativa pública).',
-      basis: 'fact',
-    },
-    findings: buildFindings('seo', [
-      [PROMOB, 'format', 'fact', 'Publica guias longos com tabela de preço por metro quadrado', 'Tabela: armário de cozinha de R$ 1.800 a R$ 3.200 por m²'],
-      [PROMOB, 'topic', 'fact', 'Concentra o blog em orçamento e custo de móveis planejados', '12 de 15 artigos recentes falam de preço e orçamento'],
-      [PROMOB, 'performance', 'fact', 'O guia de preço lidera a busca por "preço de marcenaria"', 'Posição 1 na busca por "preço de marcenaria"'],
-      [MOBILPLAN, 'format', 'fact', 'Usa comparativos "X contra planilha" com chamada no meio do texto', 'Título: Orçamento no app ou na planilha? Compare'],
-      [MOBILPLAN, 'frequency', 'fact', 'Publica dois artigos por semana', 'Datas de 4 artigos: 3, 6, 10 e 13 de outubro'],
-      [MOBILPLAN, 'topic', 'hypothesis', 'Deve estar investindo em palavras de "sistema para marcenaria"'],
-      [SPREADSHEET, 'topic', 'fact', 'Modelos de planilha gratuitos lideram a busca por "planilha de orçamento de marcenaria"', 'Três modelos para baixar nas cinco primeiras posições'],
-      [ORCAFACIL, 'frequency', 'fact', 'Mantém um artigo por mês, sempre sobre modelo de orçamento', 'Último artigo há 5 semanas'],
-      [ORCAFACIL, 'performance', 'hypothesis', 'Ranqueia pouco para termos de marcenaria por ser um site genérico'],
-    ]),
-  },
-  {
     channel: 'linkedin',
     score: 8,
     rationale:

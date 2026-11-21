@@ -1,7 +1,6 @@
 import { Entity, ID } from '@domain/base'
 
 export enum Channel {
-  SEO = 'seo',
   SITE_PRICING = 'site-pricing',
   LINKEDIN = 'linkedin',
   INSTAGRAM = 'instagram',
@@ -13,7 +12,6 @@ export enum Channel {
 }
 
 export const CHANNEL_ORDER: Channel[] = [
-  Channel.SEO,
   Channel.SITE_PRICING,
   Channel.LINKEDIN,
   Channel.INSTAGRAM,

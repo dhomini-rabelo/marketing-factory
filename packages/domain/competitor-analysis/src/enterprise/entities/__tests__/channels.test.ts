@@ -10,9 +10,8 @@ import {
 } from '@domain/competitor-analysis/enterprise/entities/channel-analysis'
 
 describe('channels', () => {
-  it('lists the nine channels in the fixed order', () => {
+  it('lists the eight channels in the fixed order', () => {
     expect(CHANNEL_ORDER).toEqual([
-      'seo',
       'site-pricing',
       'linkedin',
       'instagram',
@@ -35,9 +34,10 @@ describe('channels', () => {
     expect(PARTIAL_CHANNELS).toEqual(partialChannels)
   })
 
-  it('recognizes only the nine channel keys', () => {
+  it('recognizes only the eight channel keys', () => {
     expect(CHANNEL_ORDER.every((channel) => isChannel(channel))).toBe(true)
     expect(isChannel('facebook')).toBe(false)
+    expect(isChannel('seo')).toBe(false)
     expect(isChannel('SEO')).toBe(false)
     expect(isChannel('')).toBe(false)
   })
@@ -46,7 +46,15 @@ describe('channels', () => {
     expect(resolveChannel('linkedin')).toBe(Channel.LINKEDIN)
   })
 
-  it('rejects an unknown key with CHANNEL_NOT_FOUND carrying the nine accepted keys', () => {
+  it('rejects the retired seo key with CHANNEL_NOT_FOUND', () => {
+    expect(() => resolveChannel('seo')).toThrowError(
+      expect.objectContaining({
+        response: expect.objectContaining({ code: 'CHANNEL_NOT_FOUND' }),
+      }),
+    )
+  })
+
+  it('rejects an unknown key with CHANNEL_NOT_FOUND carrying the eight accepted keys', () => {
     expect(() => resolveChannel('facebook')).toThrow(DomainError)
     expect(() => resolveChannel('facebook')).toThrowError(
       expect.objectContaining({

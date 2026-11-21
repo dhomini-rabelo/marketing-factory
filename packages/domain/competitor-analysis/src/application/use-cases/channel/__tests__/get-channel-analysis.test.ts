@@ -43,29 +43,29 @@ describe('GetChannelAnalysisUseCase', () => {
   })
 
   it('rejects a channel that was not collected with ANALYSIS_NOT_FOUND', async () => {
-    await expect(sut.execute({ projectId: project.id.toValue(), channel: 'seo' })).rejects.toMatchObject({
+    await expect(sut.execute({ projectId: project.id.toValue(), channel: 'linkedin' })).rejects.toMatchObject({
       response: { code: 'ANALYSIS_NOT_FOUND' },
     })
   })
 
   it('does not return the analysis of another project', async () => {
     channelAnalysisRepository.items.push(
-      makeChannelAnalysis({ projectId: createID(), channel: Channel.SEO }),
+      makeChannelAnalysis({ projectId: createID(), channel: Channel.LINKEDIN }),
     )
 
-    await expect(sut.execute({ projectId: project.id.toValue(), channel: 'seo' })).rejects.toMatchObject({
+    await expect(sut.execute({ projectId: project.id.toValue(), channel: 'linkedin' })).rejects.toMatchObject({
       response: { code: 'ANALYSIS_NOT_FOUND' },
     })
   })
 
-  it('rejects a channel outside the nine with CHANNEL_NOT_FOUND', async () => {
+  it('rejects a channel outside the eight with CHANNEL_NOT_FOUND', async () => {
     await expect(
       sut.execute({ projectId: project.id.toValue(), channel: 'facebook' }),
     ).rejects.toMatchObject({ response: { code: 'CHANNEL_NOT_FOUND' } })
   })
 
   it('rejects an unknown project', async () => {
-    await expect(sut.execute({ projectId: createID().toValue(), channel: 'seo' })).rejects.toMatchObject({
+    await expect(sut.execute({ projectId: createID().toValue(), channel: 'linkedin' })).rejects.toMatchObject({
       response: { code: 'PROJECT_NOT_FOUND' },
     })
   })

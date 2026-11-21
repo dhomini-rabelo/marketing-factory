@@ -62,7 +62,7 @@ const hypothesisFinding: Finding = {
 
 function buildAnalysis(overrides: Partial<ChannelAnalysis> = {}): ChannelAnalysis {
   return {
-    channel: Channel.SEO,
+    channel: Channel.LINKEDIN,
     partial: false,
     score: 9,
     rationale: 'Quatro concorrentes publicam com frequência.',
@@ -77,7 +77,7 @@ function buildAnalysis(overrides: Partial<ChannelAnalysis> = {}): ChannelAnalysi
   }
 }
 
-function renderPage(routes: MockRoutes, channel = 'seo') {
+function renderPage(routes: MockRoutes, channel = 'linkedin') {
   const api = mockApi({ [competitorsRoute]: { body: competitorsList }, ...routes })
   const view = renderWithProviders(<ChannelPage />, {
     initialEntry: `/projects/${PROJECT_ID}/channels/${channel}`,
@@ -88,22 +88,22 @@ function renderPage(routes: MockRoutes, channel = 'seo') {
 
 describe('ChannelPage', () => {
   it('shows the loading message while the channel is on its way', () => {
-    renderPage({ [channelRoute('seo')]: neverReplies })
+    renderPage({ [channelRoute('linkedin')]: neverReplies })
 
     expect(screen.getByRole('status')).toHaveTextContent('Carregando canal...')
   })
 
   it('shows the channel name, the score, the rationale and the collection date', async () => {
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis() } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis() } })
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'SEO e blog' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'LinkedIn' })).toBeInTheDocument()
     expect(screen.getByLabelText('Nota 9 de 10')).toBeInTheDocument()
     expect(screen.getByText('Quatro concorrentes publicam com frequência.')).toBeInTheDocument()
     expect(screen.getByText('Coletado 15 mar')).toBeInTheDocument()
   })
 
   it('expands and collapses the rationale', async () => {
-    const { user } = renderPage({ [channelRoute('seo')]: { body: buildAnalysis() } })
+    const { user } = renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis() } })
 
     await user.click(await screen.findByRole('button', { name: 'ver tudo' }))
 
@@ -111,7 +111,7 @@ describe('ChannelPage', () => {
   })
 
   it('shows what performs best as a fact backed by a public number', async () => {
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis() } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis() } })
 
     const section = await screen.findByRole('region', { name: 'O que performa melhor' })
 
@@ -123,7 +123,7 @@ describe('ChannelPage', () => {
 
   it('shows what performs best as a hypothesis without a public number', async () => {
     const bestContent = { type: 'Vídeo curto', evidence: 'Sem número público.', basis: FindingKind.HYPOTHESIS }
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis({ bestContent }) } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis({ bestContent }) } })
 
     const section = await screen.findByRole('region', { name: 'O que performa melhor' })
 
@@ -131,19 +131,19 @@ describe('ChannelPage', () => {
   })
 
   it('shows the partial notice only when the channel is partial', async () => {
-    const { unmount } = renderPage({ [channelRoute('seo')]: { body: buildAnalysis({ partial: true }) } })
+    const { unmount } = renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis({ partial: true }) } })
 
     expect(await screen.findByRole('note')).toHaveTextContent('a leitura pública alcança só parte do canal')
     unmount()
 
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis({ partial: false }) } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis({ partial: false }) } })
     await screen.findByRole('heading', { level: 1 })
 
     expect(screen.queryByRole('note')).not.toBeInTheDocument()
   })
 
   it('shows a fact with the excerpt, the tool and a link that opens in a new tab', async () => {
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis() } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis() } })
 
     const link = await screen.findByRole('link', { name: 'https://promob.example/guia' })
 
@@ -155,7 +155,7 @@ describe('ChannelPage', () => {
   })
 
   it('shows a hypothesis without link and without excerpt', async () => {
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis() } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis() } })
 
     const block = await screen.findByRole('region', { name: 'Assunto' })
 
@@ -167,7 +167,7 @@ describe('ChannelPage', () => {
 
   it('does not turn a link that is not http or https into a link', async () => {
     const finding = { ...factFinding, url: 'javascript:alert(1)' }
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis({ findings: [finding] }) } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis({ findings: [finding] }) } })
 
     expect(await screen.findByText('javascript:alert(1)')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /javascript/ })).not.toBeInTheDocument()
@@ -181,7 +181,7 @@ describe('ChannelPage', () => {
       bestContent: { type: payload, evidence: payload, basis: FindingKind.FACT },
       findings: [finding],
     })
-    const { container } = renderPage({ [channelRoute('seo')]: { body: analysis } })
+    const { container } = renderPage({ [channelRoute('linkedin')]: { body: analysis } })
 
     await screen.findByRole('heading', { level: 1 })
 
@@ -191,7 +191,7 @@ describe('ChannelPage', () => {
   })
 
   it('shows "Nenhum achado registrado" with the score and the rationale when there are no findings', async () => {
-    renderPage({ [channelRoute('seo')]: { body: buildAnalysis({ findings: [] }) } })
+    renderPage({ [channelRoute('linkedin')]: { body: buildAnalysis({ findings: [] }) } })
 
     expect(await screen.findByText('Nenhum achado registrado')).toBeInTheDocument()
     expect(screen.getByLabelText('Nota 9 de 10')).toBeInTheDocument()
@@ -201,7 +201,7 @@ describe('ChannelPage', () => {
 
   it('shows that the channel was not collected, with the way back to the project', async () => {
     const notCollected = { status: 404, body: { error: { code: 'ANALYSIS_NOT_FOUND', message: 'Sem coleta' } } }
-    renderPage({ [channelRoute('seo')]: notCollected })
+    renderPage({ [channelRoute('linkedin')]: notCollected })
 
     expect(await screen.findByText('Este canal ainda não foi coletado.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voltar ao projeto' })).toHaveAttribute('href', `/projects/${PROJECT_ID}`)
@@ -220,17 +220,17 @@ describe('ChannelPage', () => {
       attempts += 1
       return attempts === 1 ? serverError : { body: buildAnalysis() }
     }
-    const { user } = renderPage({ [channelRoute('seo')]: handler })
+    const { user } = renderPage({ [channelRoute('linkedin')]: handler })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar o canal.')
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'SEO e blog' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'LinkedIn' })).toBeInTheDocument()
   })
 
   it('still shows the findings when the competitors list fails', async () => {
     renderPage({
-      [channelRoute('seo')]: { body: buildAnalysis() },
+      [channelRoute('linkedin')]: { body: buildAnalysis() },
       [competitorsRoute]: serverError,
     })
 

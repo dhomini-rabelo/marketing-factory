@@ -10,7 +10,7 @@ type PromptsPairProps = {
 }
 
 const COMPETITORS_HINT = 'O agente acha e qualifica os concorrentes e grava a lista aqui. Ele para sem pesquisar os canais.'
-const INITIAL_RESEARCH_HINT = 'O agente estuda os nove canais usando a lista aprovada. Libera quando você aprovar a lista.'
+const INITIAL_RESEARCH_HINT = 'O agente estuda os oito canais usando a lista aprovada. Libera quando você aprovar a lista.'
 const INITIAL_RESEARCH_TITLE = 'Pesquisa inicial dos canais'
 
 export function PromptsPair({ projectId, isApproved }: PromptsPairProps) {

@@ -2,7 +2,6 @@ import { Channel, FindingAspect } from '@/api/models/channel-analysis'
 import { CompetitorRole } from '@/api/models/competitor'
 
 export const CHANNEL_KEYS = [
-  { key: Channel.SEO, label: 'SEO e blog' },
   { key: Channel.SITE_PRICING, label: 'Site e preço' },
   { key: Channel.LINKEDIN, label: 'LinkedIn' },
   { key: Channel.INSTAGRAM, label: 'Instagram' },

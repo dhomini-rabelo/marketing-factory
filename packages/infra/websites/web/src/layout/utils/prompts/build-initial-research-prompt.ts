@@ -23,7 +23,7 @@ export function buildInitialResearchPrompt({ projectId, apiUrl }: PromptInput): 
     '- Use só leitura pública: não entre em nenhuma conta, não faça login e não use serviço pago. Onde a leitura pública não alcança, diga isso na justificativa e marque os achados como hipótese.',
     '- Escreva o nome de cada concorrente exatamente como está na lista, para os achados se juntarem ao concorrente certo.',
     '',
-    'Cubra os nove canais, dividindo o trabalho por canal: use um agente auxiliar para cada canal. Chaves dos canais:',
+    'Cubra os oito canais, dividindo o trabalho por canal: use um agente auxiliar para cada canal. Chaves dos canais:',
     ...channelLines,
     '',
     'Para cada canal, produza:',

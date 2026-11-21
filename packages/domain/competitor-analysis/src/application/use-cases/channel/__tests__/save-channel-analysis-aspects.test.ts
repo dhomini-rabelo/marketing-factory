@@ -23,7 +23,7 @@ describe('SaveChannelAnalysisUseCase aspects', () => {
   const saveWithAspect = (aspect: string | undefined) =>
     sut.execute({
       projectId: project.id.toValue(),
-      channel: 'seo',
+      channel: 'linkedin',
       ...makeChannelAnalysisInput({
         findings: [makeHypothesisFindingInput({ aspect: aspect as string })],
       }),
@@ -80,13 +80,13 @@ describe('SaveChannelAnalysisUseCase aspects', () => {
     })
     await sut.execute({
       projectId: project.id.toValue(),
-      channel: 'seo',
+      channel: 'linkedin',
       ...makeChannelAnalysisInput({
         findings: FINDING_ASPECT_ORDER.map((aspect) => makeHypothesisFindingInput({ aspect })),
       }),
     })
 
-    const analysis = await getUseCase.execute({ projectId: project.id.toValue(), channel: 'seo' })
+    const analysis = await getUseCase.execute({ projectId: project.id.toValue(), channel: 'linkedin' })
 
     expect(analysis.props.findings.map((finding) => finding.aspect)).toEqual(FINDING_ASPECT_ORDER)
   })

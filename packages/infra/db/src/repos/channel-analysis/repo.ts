@@ -98,9 +98,13 @@ export class SqliteChannelAnalysisRepository extends ChannelAnalysisRepository {
 
   async listCollected(projectId: ID): Promise<ChannelAnalysis[]> {
     const read = this.database.transaction(() => {
+      const channelPlaceholders = CHANNEL_ORDER.map(() => '?').join(', ')
       const records = this.database
-        .prepare(`SELECT ${ANALYSIS_COLUMNS} FROM channel_analyses WHERE project_id = ?`)
-        .all(projectId.toValue()) as ChannelAnalysisRecord[]
+        .prepare(
+          `SELECT ${ANALYSIS_COLUMNS} FROM channel_analyses
+           WHERE project_id = ? AND channel IN (${channelPlaceholders})`,
+        )
+        .all(projectId.toValue(), ...CHANNEL_ORDER) as ChannelAnalysisRecord[]
 
       return records.map((record) =>
         ChannelAnalysisMapper.toDomain({

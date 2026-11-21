@@ -16,7 +16,6 @@ const validProject = {
 }
 
 const channelKeys = [
-  'seo',
   'site-pricing',
   'linkedin',
   'instagram',
@@ -148,16 +147,15 @@ describe('channel routes', () => {
   it('lists the collected channels by score then the fixed order, with the rest not collected', async () => {
     await saveChannel({ channel: 'linkedin', body: buildAnalysis({ score: 5 }) })
     await saveChannel({ channel: 'reddit', body: buildAnalysis({ score: 9 }) })
-    await saveChannel({ channel: 'seo', body: buildAnalysis({ score: 5 }) })
+    await saveChannel({ channel: 'site-pricing', body: buildAnalysis({ score: 5 }) })
 
     const result = await listChannels()
 
     expect(result.status).toBe(200)
     expect(result.body.channels.map((channel) => channel.channel)).toEqual([
       'reddit',
-      'seo',
-      'linkedin',
       'site-pricing',
+      'linkedin',
       'instagram',
       'youtube',
       'x',
@@ -167,7 +165,7 @@ describe('channel routes', () => {
     expect(result.body.channels[0]).toMatchObject({ collected: true, partial: true, score: 9 })
     expect(result.body.channels[0].collectedAt).toEqual(expect.any(String))
     expect(result.body.channels[3]).toEqual({
-      channel: 'site-pricing',
+      channel: 'instagram',
       partial: false,
       collected: false,
       score: null,
@@ -175,14 +173,14 @@ describe('channel routes', () => {
     })
   })
 
-  it('lists the nine channels as not collected for a project without analyses', async () => {
+  it('lists the eight channels as not collected for a project without analyses', async () => {
     const result = await listChannels()
 
     expect(result.body.channels.map((channel) => channel.channel)).toEqual(channelKeys)
     expect(result.body.channels.every((channel) => !channel.collected)).toBe(true)
   })
 
-  it('answers 404 CHANNEL_NOT_FOUND for a channel outside the nine, on read and on write', async () => {
+  it('answers 404 CHANNEL_NOT_FOUND for a channel outside the eight, on read and on write', async () => {
     const read = await getChannel<ErrorBody>('facebook')
     const write = await saveChannel<ErrorBody>({ channel: 'facebook' })
 
@@ -191,6 +189,35 @@ describe('channel routes', () => {
     expect(read.body.error.message).toContain('youtube')
     expect(write.status).toBe(404)
     expect(write.body.error.code).toBe('CHANNEL_NOT_FOUND')
+  })
+
+  it('refuses the retired seo channel with 404 CHANNEL_NOT_FOUND, on read and on write', async () => {
+    const read = await getChannel<ErrorBody>('seo')
+    const write = await saveChannel<ErrorBody>({ channel: 'seo' })
+
+    expect(read.status).toBe(404)
+    expect(read.body.error.code).toBe('CHANNEL_NOT_FOUND')
+    expect(write.status).toBe(404)
+    expect(write.body.error.code).toBe('CHANNEL_NOT_FOUND')
+  })
+
+  it('does not list the seo row saved by the previous version and keeps it in the table', async () => {
+    app.database
+      .prepare(
+        `INSERT INTO channel_analyses
+           (id, project_id, channel, score, rationale, best_content_type,
+            best_content_evidence, best_content_basis, collected_at)
+         VALUES ('previous-seo-analysis', ?, 'seo', 8, 'Old SEO note', 'guide', 'Most read', 'fact', '2026-11-01T10:00:00.000Z')`,
+      )
+      .run(projectId)
+
+    const result = await listChannels()
+    const seoRows = app.database.prepare("SELECT COUNT(*) AS total FROM channel_analyses WHERE channel = 'seo'").get()
+
+    expect(result.status).toBe(200)
+    expect(result.body.channels.map((channel) => channel.channel)).toEqual(channelKeys)
+    expect(result.body.channels.every((channel) => !channel.collected)).toBe(true)
+    expect(seoRows).toEqual({ total: 1 })
   })
 
   it('answers 404 ANALYSIS_NOT_FOUND for a valid channel not collected yet', async () => {
@@ -245,7 +272,7 @@ describe('channel routes', () => {
   })
 
   it('lists an invalid score together with the missing fields of an incomplete body', async () => {
-    const result = await saveChannel<ErrorBody>({ channel: 'seo', body: { score: 11 } })
+    const result = await saveChannel<ErrorBody>({ channel: 'site-pricing', body: { score: 11 } })
 
     expect(result.status).toBe(400)
     expect(result.body.error.code).toBe('VALIDATION_ERROR')
@@ -322,7 +349,7 @@ describe('channel routes', () => {
   })
 
   it('accepts the score limits 0 and 10', async () => {
-    const lowest = await saveChannel({ channel: 'seo', body: buildAnalysis({ score: 0 }) })
+    const lowest = await saveChannel({ channel: 'site-pricing', body: buildAnalysis({ score: 0 }) })
     const highest = await saveChannel({ channel: 'ads', body: buildAnalysis({ score: 10 }) })
 
     expect(lowest.status).toBe(201)
@@ -393,7 +420,7 @@ describe('channel routes', () => {
     expect(result.body.error.code).toBe('INVALID_JSON')
   })
 
-  it('accepts nine simultaneous writes of different channels and keeps all of them', async () => {
+  it('accepts eight simultaneous writes of different channels and keeps all of them', async () => {
     const results = await Promise.all(
       channelKeys.map((channel, position) =>
         saveChannel({ channel, body: buildAnalysis({ score: position }) }),

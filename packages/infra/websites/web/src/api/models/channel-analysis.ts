@@ -1,5 +1,4 @@
 export enum Channel {
-  SEO = 'seo',
   SITE_PRICING = 'site-pricing',
   LINKEDIN = 'linkedin',
   INSTAGRAM = 'instagram',

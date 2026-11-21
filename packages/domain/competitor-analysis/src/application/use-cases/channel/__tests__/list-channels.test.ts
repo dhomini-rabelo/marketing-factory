@@ -30,7 +30,7 @@ describe('ListChannelsUseCase', () => {
     })
   })
 
-  it('lists the nine channels as not collected when nothing was saved', async () => {
+  it('lists the eight channels as not collected when nothing was saved', async () => {
     const channels = await sut.execute({ projectId: project.id.toValue() })
 
     expect(channels.map((summary) => summary.channel)).toEqual(CHANNEL_ORDER)
@@ -52,7 +52,7 @@ describe('ListChannelsUseCase', () => {
   })
 
   it('orders collected channels by descending score', async () => {
-    collect(Channel.SEO, 4)
+    collect(Channel.INSTAGRAM, 4)
     collect(Channel.YOUTUBE, 9)
     collect(Channel.LINKEDIN, 6)
 
@@ -61,7 +61,7 @@ describe('ListChannelsUseCase', () => {
     expect(channels.slice(0, 3).map((summary) => [summary.channel, summary.score])).toEqual([
       ['youtube', 9],
       ['linkedin', 6],
-      ['seo', 4],
+      ['instagram', 4],
     ])
     expect(channels.slice(0, 3).every((summary) => summary.collected)).toBe(true)
     expect(channels[0].collectedAt).toBeInstanceOf(Date)
@@ -95,7 +95,7 @@ describe('ListChannelsUseCase', () => {
 
   it('ignores analyses of other projects', async () => {
     channelAnalysisRepository.items.push(
-      makeChannelAnalysis({ projectId: createID(), channel: Channel.SEO, score: 10 }),
+      makeChannelAnalysis({ projectId: createID(), channel: Channel.INSTAGRAM, score: 10 }),
     )
 
     const channels = await sut.execute({ projectId: project.id.toValue() })

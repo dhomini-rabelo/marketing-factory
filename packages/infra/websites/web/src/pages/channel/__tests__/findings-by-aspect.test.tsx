@@ -267,7 +267,7 @@ describe('FindingsByAspect component', () => {
     renderWithProviders(
       <ChannelHeader
         projectId="p1"
-        channelName="SEO e blog"
+        channelName="LinkedIn"
         collectedAt="2026-03-15T12:00:00.000Z"
         findingsByAspect={groupFindingsByAspect(findings, competitors)}
       />,
