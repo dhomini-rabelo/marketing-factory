@@ -56,3 +56,9 @@ export function formatSearchDate(searchedAt: string): string {
 export function formatSearchResults(results: SeoSearchResult[]): string {
   return results.map((result) => `${result.position}. ${result.name}`).join(' · ')
 }
+
+export function findPositionOf(search: SeoSearch, names: string[]): number | null {
+  const wanted = names.filter(Boolean).map((name) => name.toLowerCase())
+  const result = search.results.find((entry) => wanted.includes(entry.name.toLowerCase()))
+  return result ? result.position : null
+}

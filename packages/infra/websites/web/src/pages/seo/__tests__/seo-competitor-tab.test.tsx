@@ -176,6 +176,12 @@ describe('competitor tab sections', () => {
       'Autores e tom',
       'Pastas em série',
       'Posts antigos',
+      'Comparações',
+      'Temas do blog',
+      'Posts da amostra',
+      'Leitura do agente',
+      'Posição no Google',
+      'Documentos',
     ])
     expect(api.requestsTo('GET', API_ROUTES.seo.competitor(PROJECT_ID, 'latest', COMPETITOR_NAME))).toHaveLength(1)
   })
@@ -400,6 +406,132 @@ describe('competitor tab blog sections', () => {
       expect(section.getByText(limits)).toBeInTheDocument()
     }
     expect(findSection('Posts antigos').getByText('Sem post antigo na amostra.')).toBeInTheDocument()
+  })
+})
+
+const closingLimits = 'Sem dateModified em um post antigo.'
+
+function buildSearch(query: string, results: { position: number; competitor: string }[]) {
+  return { texts: { query, market: 'Brasil', searchedAt: '2026-11-20', searchTool: 'Grok' }, results }
+}
+
+const closingDocuments = [
+  { title: 'Plano de conteúdo', fileName: 'plano.md', about: 'Cita o Cally em vários pontos.', size: 2048, body: 'Texto inteiro do plano sobre o Cally.' },
+]
+
+const closingDetail: SeoCompetitor = {
+  ...blogDetail,
+  profile: { url: 'https://www.cally.com/', numbers: { blogPostsMainLanguage: 100 }, texts: { limits: closingLimits, dominantTopics: 'Produtividade e agenda para times remotos.' } },
+  comparisons: Array.from({ length: 7 }, (_, index) => ({
+    url: `https://cally.com/vs/rival-${index + 1}`,
+    texts: { slug: `cally-vs-rival-${index + 1}`, rivals: [`Rival ${index + 1}`], format: 'vs' },
+  })),
+  clusters: Array.from({ length: 10 }, (_, index) => ({
+    texts: { theme: `Tema ${index + 1}`, term: `termo-${index + 1}`, exampleUrl: `https://cally.com/blog/tema-${index + 1}` },
+    numbers: { pages: 50 - index },
+  })),
+  documents: closingDocuments,
+}
+
+describe('competitor tab closing sections', () => {
+  it('lists every comparison in a full table and every counted blog topic, beyond the overview caps', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: closingDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Comparações', { selector: 'h3' })
+
+    const comparisons = findSection('Comparações')
+    expect(comparisons.getAllByRole('row')).toHaveLength(8)
+    expect(comparisons.getByText('cally-vs-rival-7')).toBeInTheDocument()
+    expect(findSection('Temas do blog').getAllByRole('listitem')).toHaveLength(10)
+  })
+
+  it('says why there are no comparisons and no topics instead of leaving the sections empty', async () => {
+    const limits = 'O blog exige login e foi barrado.'
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: { ...closingDetail, comparisons: [], clusters: [], items: [], profile: { texts: { limits } } } } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Comparações', { selector: 'h3' })
+
+    expect(findSection('Comparações').getByText('Sem comparações nesta rodada.')).toBeInTheDocument()
+    expect(findSection('Comparações').getByText(limits)).toBeInTheDocument()
+    expect(findSection('Temas do blog').getByText(limits)).toBeInTheDocument()
+    expect(findSection('Posts da amostra').getByText('Nenhuma página lida na amostra.')).toBeInTheDocument()
+  })
+
+  it('shows each sample post with title, type, date, words and link, and "não medido" for missing words', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: closingDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Posts da amostra', { selector: 'h3' })
+
+    const section = findSection('Posts da amostra')
+    expect(section.getAllByRole('row')).toHaveLength(5)
+    const first = findRow(section, 'https://cally.com/a')
+    expect(first.getByText('Título https://cally.com/a')).toBeInTheDocument()
+    expect(first.getByText('blog')).toBeInTheDocument()
+    expect(first.getByText('10/11/2026')).toBeInTheDocument()
+    expect(first.getByText('1.200')).toBeInTheDocument()
+    expect(first.getByRole('link', { name: 'abrir' })).toHaveAttribute('href', 'https://cally.com/a')
+    expect(findRow(section, 'https://cally.com/b').getByText('não medido')).toBeInTheDocument()
+  })
+
+  it('shows the agent reading with low confidence and the collection limits', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: closingDetail } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Leitura do agente', { selector: 'h3' })
+
+    const section = findSection('Leitura do agente')
+    expect(section.getByText('Produtividade e agenda para times remotos.')).toBeInTheDocument()
+    expect(section.getByText('baixa confiança')).toBeInTheDocument()
+    expect(section.getByText(closingLimits)).toBeInTheDocument()
+  })
+
+  it('shows the positions only of this competitor, with low confidence and outside the sample when it did not appear', async () => {
+    const searches = [
+      buildSearch('agenda online', [{ position: 3, competitor: COMPETITOR_NAME }, { position: 5, competitor: OTHER_NAME }]),
+      buildSearch('reunião remota', [{ position: 1, competitor: OTHER_NAME }]),
+    ]
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: closingDetail }, [`GET ${API_ROUTES.seo.round(PROJECT_ID, 'latest')}`]: { body: { ...round, searches } } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Posição no Google', { selector: 'h3' })
+
+    const section = findSection('Posição no Google')
+    expect(section.getByText('baixa confiança')).toBeInTheDocument()
+    expect(section.getByText('3º')).toBeInTheDocument()
+    expect(section.queryByText('5º')).not.toBeInTheDocument()
+    expect(section.getByText('fora da amostra')).toBeInTheDocument()
+  })
+
+  it('says the Google position was not collected, with the reason from the round note, when there are no searches', async () => {
+    const note = 'A ferramenta não deu busca confiável.'
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: closingDetail }, [`GET ${API_ROUTES.seo.round(PROJECT_ID, 'latest')}`]: { body: { ...round, note } } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Posição no Google', { selector: 'h3' })
+
+    const section = findSection('Posição no Google')
+    expect(section.getByText('Posição no Google não coletada nesta rodada.')).toBeInTheDocument()
+    expect(section.getByText(note)).toBeInTheDocument()
+  })
+
+  it('opens the whole document that cites the competitor and says when none does', async () => {
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: closingDetail } })
+    const user = await openTab(COMPETITOR_NAME)
+    await screen.findByText('Documentos', { selector: 'h3' })
+
+    const section = findSection('Documentos')
+    expect(section.getByText('Plano de conteúdo')).toBeInTheDocument()
+    expect(section.getByText('2,0 KB', { exact: false })).toBeInTheDocument()
+    await user.click(section.getByText('ler aqui'))
+    expect(section.getByText('Texto inteiro do plano sobre o Cally.')).toBeVisible()
+  })
+
+  it('says no document cites the competitor and gives the blog limits when there is no blog', async () => {
+    const limits = 'O blog exige login e foi barrado.'
+    renderSeoPage({ [COMPETITOR_ROUTE]: { body: { ...closingDetail, items: [], documents: [], profile: { texts: { limits } } } } })
+    await openTab(COMPETITOR_NAME)
+    await screen.findByText('Documentos', { selector: 'h3' })
+
+    const section = findSection('Documentos')
+    expect(section.getByText('Nenhum documento da rodada cita Cally.')).toBeInTheDocument()
+    expect(section.getByText(limits)).toBeInTheDocument()
   })
 })
 
