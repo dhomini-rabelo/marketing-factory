@@ -35,7 +35,7 @@ export function MetricTable({ competitors, columns }: MetricTableProps) {
       </colgroup>
       <thead>
         <tr>
-          <th scope="col" className="bg-code-bg py-1.5 pl-4 pr-2 text-left align-bottom text-[11.5px] font-bold text-ink-3">
+          <th scope="col" className="bg-code-bg py-1 pl-4 pr-2 text-left align-bottom text-[11.5px] font-bold text-ink-3">
             Concorrente
           </th>
           {columns.map((column) => (

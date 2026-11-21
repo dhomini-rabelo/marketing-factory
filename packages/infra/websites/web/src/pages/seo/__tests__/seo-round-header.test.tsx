@@ -79,6 +79,32 @@ describe('SeoRoundHeader', () => {
     expect(screen.getByText('Sem login nas contas.')).toBeInTheDocument()
   })
 
+  it('keeps a long agent note whole behind a see more button that expands and collapses it', async () => {
+    const longNote = `Parte 1 de 6 do teste. ${'As buscas no Google não foram feitas. '.repeat(8)}`.trim()
+    const { user } = renderPage(buildRound({ note: longNote }))
+
+    const seeMore = await screen.findByRole('button', { name: 'ver mais' })
+    expect(seeMore).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByText(longNote)).toHaveClass('line-clamp-2')
+
+    await user.click(seeMore)
+
+    const seeLess = screen.getByRole('button', { name: 'ver menos' })
+    expect(seeLess).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText(longNote)).not.toHaveClass('line-clamp-2')
+
+    await user.click(seeLess)
+
+    expect(screen.getByRole('button', { name: 'ver mais' })).toBeInTheDocument()
+  })
+
+  it('shows a short agent note whole, without a see more button', async () => {
+    renderPage(buildRound())
+
+    expect(await screen.findByText('Sem login nas contas.')).not.toHaveClass('line-clamp-2')
+    expect(screen.queryByRole('button', { name: 'ver mais' })).not.toBeInTheDocument()
+  })
+
   it('lists the main competitors first and the overview tab before them', async () => {
     renderPage(buildRound())
 

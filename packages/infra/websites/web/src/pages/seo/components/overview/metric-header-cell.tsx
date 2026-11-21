@@ -18,7 +18,7 @@ export function MetricHeaderCell({ column, sortDirection, isSortable, onSort }: 
     <th
       scope="col"
       aria-sort={sortDirection ? ARIA_SORT[sortDirection] : undefined}
-      className={cn('bg-code-bg px-2 py-1.5 text-right align-bottom text-[11.5px] font-bold leading-tight text-ink-3', column.hasSeparator && 'border-l border-l-line')}
+      className={cn('bg-code-bg px-2 py-1 text-right align-bottom text-[11.5px] font-bold leading-tight text-ink-3', column.hasSeparator && 'border-l border-l-line')}
     >
       {isSortable ? (
         <button type="button" title="Clique para ordenar" onClick={onSort} className="cursor-pointer font-bold text-ink-2">

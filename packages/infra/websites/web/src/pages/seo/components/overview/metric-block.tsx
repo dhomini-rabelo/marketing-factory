@@ -13,7 +13,7 @@ type MetricBlockProps = {
 export function MetricBlock({ title, subtitle, competitors, columns }: MetricBlockProps) {
   return (
     <div className="border-t border-line first:border-t-0">
-      <div className="flex items-baseline gap-2.5 px-4 pb-1.5 pt-3">
+      <div className="flex items-baseline gap-2.5 px-4 pb-1 pt-2">
         <b className="text-[13.5px]">{title}</b>
         <span className="text-xs text-ink-3">{subtitle}</span>
       </div>

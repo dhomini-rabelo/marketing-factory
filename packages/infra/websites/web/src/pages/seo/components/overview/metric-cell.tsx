@@ -14,7 +14,7 @@ type MetricCellProps = {
 export function MetricCell({ column, competitor, isBest }: MetricCellProps) {
   const value = readProfileNumber(competitor.profile, column.metricKey)
   const cellClassName = cn(
-    'border-t border-line px-2 py-1.5 text-right tabular-nums',
+    'border-t border-line px-2 py-1 text-right tabular-nums',
     column.hasSeparator && 'border-l border-l-line',
     isBest && 'bg-support-soft',
   )

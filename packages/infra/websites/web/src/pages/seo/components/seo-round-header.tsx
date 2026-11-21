@@ -9,7 +9,7 @@ type SeoRoundHeaderProps = {
 
 export function SeoRoundHeader({ round }: SeoRoundHeaderProps) {
   return (
-    <div data-secao="barra" className="relative mt-3.5 flex items-center gap-3.5">
+    <div data-secao="barra" className="relative mt-2.5 flex items-center gap-3.5">
       <SeoRoundPicker />
       <SeoRoundInfo round={round} />
       <SeoCopyPrompt />

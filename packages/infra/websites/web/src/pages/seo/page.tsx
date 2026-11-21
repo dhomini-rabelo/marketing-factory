@@ -7,7 +7,7 @@ export function SeoPage() {
 
   return (
     <SeoTabProvider>
-      <div className="px-9 pb-10 pt-7">
+      <div className="px-9 pb-10 pt-5">
         <nav aria-label="Caminho" className="mb-2 text-[13px] text-ink-3">
           <Link to={`/projects/${projectId}`} className="text-ink-2">
             Projeto

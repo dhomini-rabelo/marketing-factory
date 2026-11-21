@@ -12,8 +12,8 @@ type MetricRowProps = {
 export function MetricRow({ competitor, columns, bestValues }: MetricRowProps) {
   return (
     <tr data-competitor={competitor.name}>
-      <td className="border-t border-line py-1.5 pl-4 pr-2 text-left">
-        <b className="block text-[13.5px] font-bold">{competitor.name}</b>
+      <td className="border-t border-line py-1 pl-4 pr-2 text-left">
+        <b className="mr-2 text-[13.5px] font-bold">{competitor.name}</b>
         <small className="text-[11px] text-ink-3">{readProfileDomain(competitor.profile)}</small>
       </td>
       {columns.map((column) => {

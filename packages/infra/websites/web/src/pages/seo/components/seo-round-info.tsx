@@ -1,4 +1,5 @@
 import type { SeoRound } from '@/api/models/seo'
+import { SeoRoundNote } from '@/pages/seo/components/seo-round-note'
 import { formatCount } from '@/pages/seo/utils/format-count'
 import { formatSeoDate } from '@/pages/seo/utils/format-seo-date'
 
@@ -19,7 +20,7 @@ export function SeoRoundInfo({ round }: SeoRoundInfoProps) {
         <span>{formatCount(round.pagesRead, 'página lida', 'páginas lidas')}</span>
         <span>{formatCount(round.documents.length, 'documento', 'documentos')}</span>
       </p>
-      {round.note && <p className="mt-1 text-xs text-ink-3">{round.note}</p>}
+      {round.note && <SeoRoundNote note={round.note} />}
     </div>
   )
 }

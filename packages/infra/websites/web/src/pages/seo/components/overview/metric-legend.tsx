@@ -13,7 +13,7 @@ export function MetricLegend({ competitors, columns }: MetricLegendProps) {
   const canCompare = competitors.length > 1
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-t border-line bg-hover px-4 py-2 text-xs leading-normal text-ink-3">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 border-t border-line bg-hover px-4 py-1 text-xs leading-normal text-ink-3">
       {canCompare && (
         <span>
           <b className="text-support">Verde</b> = melhor valor da coluna

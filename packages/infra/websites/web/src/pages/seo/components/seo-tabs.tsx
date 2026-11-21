@@ -9,7 +9,7 @@ type SeoTabsProps = {
 
 export function SeoTabs({ competitors }: SeoTabsProps) {
   return (
-    <nav aria-label="Visão geral ou um concorrente" data-secao="abas-concorrentes" className="mt-3 flex flex-wrap gap-1.5">
+    <nav aria-label="Visão geral ou um concorrente" data-secao="abas-concorrentes" className="mt-2 flex flex-wrap gap-1.5">
       <SeoTabButton tab={SEO_OVERVIEW_TAB}>Visão geral</SeoTabButton>
       {sortSeoCompetitors(competitors).map((competitor) => (
         <SeoTabButton key={competitor.name} tab={competitor.name}>
