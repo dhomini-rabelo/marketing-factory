@@ -1,6 +1,7 @@
 import { useParams } from 'react-router'
 import { useSeoRoundData } from '@/layout/hooks/api/use-seo-round-data'
 import { useSeoRoundsData } from '@/layout/hooks/api/use-seo-rounds-data'
+import { CompetitorTab } from '@/pages/seo/components/competitor/competitor-tab'
 import { SeoOverview } from '@/pages/seo/components/overview/seo-overview'
 import { SeoEmpty } from '@/pages/seo/components/seo-empty'
 import { SeoError } from '@/pages/seo/components/seo-error'
@@ -32,6 +33,8 @@ export function SeoContent() {
   if (!hasRounds) return <SeoEmpty />
   if (!round) return null
 
+  const activeCompetitor = round.competitors.find((competitor) => competitor.name === tabState.activeTab)
+
   return (
     <>
       <SeoTabs competitors={round.competitors} />
@@ -39,6 +42,7 @@ export function SeoContent() {
       <SeoPartialBanner round={round} />
       <SeoWarnings warnings={round.warnings} />
       {tabState.activeTab === SEO_OVERVIEW_TAB && <SeoOverview round={round} />}
+      {activeCompetitor && <CompetitorTab key={activeCompetitor.name} competitor={activeCompetitor} round={round} />}
     </>
   )
 }

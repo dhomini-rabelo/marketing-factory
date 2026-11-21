@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 type OverviewSectionProps = {
   position: number
   title: string
-  note: string
+  note: ReactNode
   children: ReactNode
 }
 
