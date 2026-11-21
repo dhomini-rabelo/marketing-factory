@@ -12,6 +12,7 @@ const ProjectPage = lazy(() =>
 const ChannelPage = lazy(() =>
   import('@/pages/channel/page').then((module) => ({ default: module.ChannelPage })),
 )
+const SeoPage = lazy(() => import('@/pages/seo/page').then((module) => ({ default: module.SeoPage })))
 const CompetitorsPage = lazy(() =>
   import('@/pages/competitors/page').then((module) => ({ default: module.CompetitorsPage })),
 )
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <HomePage /> },
       { path: '/projects/new', element: <NewProjectPage /> },
       { path: '/projects/:projectId', element: <ProjectPage /> },
+      { path: '/projects/:projectId/channels/seo', element: <SeoPage /> },
       { path: '/projects/:projectId/channels/:channel', element: <ChannelPage /> },
       { path: '/projects/:projectId/competitors', element: <CompetitorsPage /> },
     ],

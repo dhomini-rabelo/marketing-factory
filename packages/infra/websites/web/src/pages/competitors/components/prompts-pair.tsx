@@ -1,8 +1,8 @@
 import { API_URL } from '@/core/config'
+import { LockedPromptCard } from '@/layout/components/common/locked-prompt-card/locked-prompt-card'
 import { PromptCard } from '@/layout/components/common/prompt-card/prompt-card'
 import { buildCompetitorsPrompt } from '@/layout/utils/prompts/build-competitors-prompt'
 import { buildInitialResearchPrompt } from '@/layout/utils/prompts/build-initial-research-prompt'
-import { LockedPromptCard } from '@/pages/competitors/components/locked-prompt-card'
 
 type PromptsPairProps = {
   projectId: string

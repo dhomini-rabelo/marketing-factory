@@ -357,10 +357,13 @@ describe("Sidebar", () => {
       await screen.findByRole("link", { name: /LinkedIn/ });
       const channelLinks = screen
         .getAllByRole("link")
-        .filter((link) =>
-          link
-            .getAttribute("href")
-            ?.startsWith(`/projects/${FIRST_PROJECT_ID}/channels/`),
+        .filter(
+          (link) =>
+            link
+              .getAttribute("href")
+              ?.startsWith(`/projects/${FIRST_PROJECT_ID}/channels/`) &&
+            link.getAttribute("href") !==
+              `/projects/${FIRST_PROJECT_ID}/channels/seo`,
         );
 
       expect(channelLinks.map((link) => link.getAttribute("href"))).toEqual([

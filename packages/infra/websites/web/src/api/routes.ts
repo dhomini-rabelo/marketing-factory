@@ -17,4 +17,10 @@ export const API_ROUTES = {
       `/projects/${projectId}/competitors/${competitorId}`,
     approval: (projectId: string) => `/projects/${projectId}/competitors-approval`,
   },
+  seo: {
+    rounds: (projectId: string) => `/projects/${projectId}/seo/rounds`,
+    round: (projectId: string, roundId: string) => `/projects/${projectId}/seo/rounds/${roundId}`,
+    competitor: (projectId: string, roundId: string, competitorName: string) =>
+      `/projects/${projectId}/seo/rounds/${roundId}/competitors/${encodeURIComponent(competitorName)}`,
+  },
 }

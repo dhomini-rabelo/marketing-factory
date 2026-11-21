@@ -3,6 +3,7 @@ import { ChannelItem } from '@/layout/components/sidebar/components/initial-rese
 import { InitialResearchEmpty } from '@/layout/components/sidebar/components/initial-research-section/initial-research-empty'
 import { InitialResearchError } from '@/layout/components/sidebar/components/initial-research-section/initial-research-error'
 import { InitialResearchLoading } from '@/layout/components/sidebar/components/initial-research-section/initial-research-loading'
+import { SeoItem } from '@/layout/components/sidebar/components/initial-research-section/seo-item'
 import { useChannelsData } from '@/layout/hooks/api/use-channels-data'
 import { useCompetitorsData } from '@/layout/hooks/api/use-competitors-data'
 
@@ -39,6 +40,7 @@ export function InitialResearchSection({ projectId }: InitialResearchSectionProp
         </p>
       )}
       {renderChannels()}
+      <SeoItem projectId={projectId} isDimmed={isDimmed} />
     </section>
   )
 }
