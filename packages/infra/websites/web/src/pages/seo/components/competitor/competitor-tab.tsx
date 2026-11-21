@@ -25,7 +25,7 @@ import { TopicExamples } from '@/pages/seo/components/competitor/topic-examples'
 import { useSeoRoundId } from '@/pages/seo/hooks/use-seo-round-id'
 import { readAudiences } from '@/pages/seo/utils/seo-audiences'
 import { readCategories } from '@/pages/seo/utils/seo-categories'
-import { groupExamplesByTopic } from '@/pages/seo/utils/seo-examples'
+import { groupExamplesByTopic, readExamples } from '@/pages/seo/utils/seo-examples'
 import { readFolders, readSampleItems } from '@/pages/seo/utils/seo-items'
 import { readProfileDomain, readProfileText } from '@/pages/seo/utils/seo-profile'
 
@@ -60,7 +60,7 @@ export function CompetitorTab({ competitor, round }: CompetitorTabProps) {
       <EffortAndPageTypes competitor={{ ...competitor, profile: data.profile }} />
       <CategoriesRhythm categories={categories} limits={limits} />
       <FormatAndFunnel categories={categories} limits={limits} />
-      <Audiences audiences={readAudiences(data.audiences)} limits={limits} />
+      <Audiences competitorName={competitor.name} audiences={readAudiences(data.audiences)} examples={readExamples(data.examples)} limits={limits} />
       <TopicExamples groups={groupExamplesByTopic(categories, data.examples)} limits={limits} />
       <CommunicationPerPost items={items} limits={limits} />
       <ImagesPerPost items={items} limits={limits} />

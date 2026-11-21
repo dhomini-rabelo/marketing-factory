@@ -12,6 +12,7 @@ export type SeoExample = {
   cardSummary: string
   author: string
   audienceRole: string
+  audienceSize: string
 }
 
 export type TopicExamples = {
@@ -19,7 +20,7 @@ export type TopicExamples = {
   examples: SeoExample[]
 }
 
-function readExamples(examples: object[]): SeoExample[] {
+export function readExamples(examples: object[]): SeoExample[] {
   return examples.filter(isRecord).map((example) => ({
     url: typeof example.url === 'string' ? example.url : '',
     publishedAt: typeof example.publishedAt === 'string' ? example.publishedAt : '',
@@ -28,6 +29,7 @@ function readExamples(examples: object[]): SeoExample[] {
     cardSummary: readProfileText(example, 'cardSummary'),
     author: readProfileText(example, 'author'),
     audienceRole: readProfileText(example, 'audienceRole'),
+    audienceSize: readProfileText(example, 'audienceSize'),
   }))
 }
 
@@ -37,4 +39,10 @@ export function groupExamplesByTopic(categories: SeoCategory[], examples: object
     topic: category.name,
     examples: parsedExamples.filter((example) => example.category === category.name).slice(0, MAX_EXAMPLES_PER_TOPIC),
   }))
+}
+
+export function listExamplesOfAudience(examples: SeoExample[], audienceRole: string): SeoExample[] {
+  return examples
+    .filter((example) => example.audienceRole === audienceRole)
+    .sort((first, second) => second.publishedAt.localeCompare(first.publishedAt))
 }

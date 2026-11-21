@@ -4,14 +4,17 @@ import { CompetitorEmpty } from '@/pages/seo/components/competitor/competitor-em
 import { OverviewSection } from '@/pages/seo/components/overview/overview-section'
 import { formatNumber } from '@/pages/seo/utils/format-number'
 import { countClassifiedExamples, type SeoAudience } from '@/pages/seo/utils/seo-audiences'
+import type { SeoExample } from '@/pages/seo/utils/seo-examples'
 import { findLimitReason } from '@/pages/seo/utils/seo-limits'
 
 type AudiencesProps = {
+  competitorName: string
   audiences: SeoAudience[]
+  examples: SeoExample[]
   limits: string
 }
 
-export function Audiences({ audiences, limits }: AudiencesProps) {
+export function Audiences({ competitorName, audiences, examples, limits }: AudiencesProps) {
   const classified = countClassifiedExamples(audiences)
 
   return (
@@ -24,7 +27,7 @@ export function Audiences({ audiences, limits }: AudiencesProps) {
             Base: <b className="text-ink">{formatNumber(classified)} exemplos classificados</b>. Os dois modelos abaixo são independentes e podem discordar.
           </p>
           <div className="grid grid-cols-2 border-t border-line">
-            <AudiencesShare audiences={audiences} classified={classified} />
+            <AudiencesShare competitorName={competitorName} audiences={audiences} examples={examples} classified={classified} />
             <AudiencesAgent audiences={audiences} classified={classified} />
           </div>
         </>
